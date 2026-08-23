@@ -67,7 +67,7 @@
   }
   /* Interactive elements: kill the 350ms double-tap delay, the long-press
      callout menu, and accidental text selection on rapid taps. */
-  button, select, .tile, .tab-btn {
+  button, select, .tile, .tab-btn, .flip-zone {
     touch-action: manipulation;
     -webkit-user-select: none;
     user-select: none;
@@ -94,7 +94,7 @@
   #currencySelect {
     position: absolute;
     top: 2px;
-    right: 2px;
+    left: 2px;
     height: 44px;
     padding: 0 22px 0 8px;
     border: none;
@@ -114,15 +114,141 @@
     background-repeat: no-repeat;
   }
 
-  .balance-card {
+  /* The card defaults to a calendar (see .cal-* below) and flips to this
+     Net/In/Out summary on tap — see .balance-flip / .flip-zone. */
+  .balance-flip {
     position: relative;
     background: var(--card);
     border: 1px solid var(--hairline);
-    border-radius: 12px;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    perspective: 1200px;
+  }
+  /* Not a <button>: the summary face holds a real <select>, and nesting
+     interactive controls inside a button is invalid HTML with unreliable
+     focus/click behavior across browsers. role="button" plus the keydown
+     handler in the script restore native-button keyboard behavior. */
+  .flip-zone {
+    position: relative;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+  }
+  .flip-inner {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0.15, 0.15, 1);
+  }
+  .flip-zone.flipped .flip-inner { transform: rotateY(180deg); }
+  /* Front face is normal flow, so its content (a calendar of varying row
+     count) sets the card's height; the back face is an absolute overlay
+     that inherits that same height automatically. */
+  .face {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .face.front { pointer-events: auto; }
+  .face.back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     padding: 26px 24px;
     text-align: center;
-    margin-bottom: 20px;
+    pointer-events: none;
   }
+  .flip-zone.flipped .face.front { pointer-events: none; }
+  .flip-zone.flipped .face.back { pointer-events: auto; }
+  .flip-hint {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--shell);
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .flip-hint svg { width: 13px; height: 13px; }
+
+  .cal-dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 6px 10px 2px;
+  }
+  .cal-dow span {
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    opacity: 0.75;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    padding: 2px 10px 4px;
+  }
+  .day {
+    position: relative;
+    min-height: 30px;
+    border-radius: 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+  }
+  .day .n {
+    font-size: 12px;
+    line-height: 1;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .day .a {
+    font-size: 9.5px;
+    line-height: 1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .day.blank { visibility: hidden; }
+  .day.future .n { opacity: 0.4; }
+  .day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .day.today .n { color: var(--ink); font-weight: 700; }
+  /* Tint intensity is relative to the month's own numbers (see
+     buildCalendarFace's maxExpAmt), not a fixed dollar amount, so this
+     reads sensibly at any currency or income scale. */
+  .day.t1 { background: color-mix(in srgb, var(--expense) 8%, transparent); }
+  .day.t2 { background: color-mix(in srgb, var(--expense) 16%, transparent); }
+  .day.t3 { background: color-mix(in srgb, var(--expense) 26%, transparent); }
+  .day.inc { background: color-mix(in srgb, var(--income) 16%, transparent); }
+  .day.t1 .a, .day.t2 .a, .day.t3 .a { color: var(--expense); }
+  .day.inc .a { color: var(--income); }
+
+  .cal-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 10px 6px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cal-legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .cal-legend i.exp { background: var(--expense); }
+  .cal-legend i.inc { background: var(--income); }
+
   .balance-label {
     font-size: 12px;
     letter-spacing: 0.1em;
@@ -171,14 +297,14 @@
        min-content width, and the longer labels are wide enough to push the
        last column off-screen rather than letting the track shrink. */
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 24px;
+    gap: 8px;
+    margin-bottom: 16px;
   }
   .tile {
     background: var(--card);
     border: 1px solid var(--hairline);
     border-radius: 12px;
-    min-height: 84px;
+    min-height: 74px;
     padding: 10px 3px 8px;
     display: flex;
     flex-direction: column;
@@ -205,7 +331,7 @@
     grid-column: span 2;
     flex-direction: row;
     justify-content: center;
-    min-height: 58px;
+    min-height: 50px;
     gap: 10px;
     padding: 8px 12px;
   }
@@ -389,29 +515,25 @@
     margin-bottom: 10px;
   }
   /* The month is now the scope for the whole view, so it stays pinned
-     while you scroll rather than scrolling away above the entries.
-     The opaque background has to span the full content column — when this
-     was capped at 340px inside a 350px column, rows scrolled visibly
-     through the ~5px gutter left at each side. The cap now lives on the
-     inner row instead, so the controls keep their original placement. */
+     while you scroll rather than scrolling away above the entries. It reads
+     as the balance card's own header — same surface and border, divided
+     from the calendar/summary below by its own bottom edge — rather than a
+     detached bar, so .balance-flip below drops its top border/radius to
+     keep that seam a single line. */
   .month-nav {
     position: sticky;
     top: 0;
     z-index: 10;
-    margin-left: calc(-1 * max(20px, env(safe-area-inset-left)));
-    margin-right: calc(-1 * max(20px, env(safe-area-inset-right)));
-    margin-bottom: 14px;
-    padding: 6px max(20px, env(safe-area-inset-right)) 10px
-                  max(20px, env(safe-area-inset-left));
-    background: var(--paper);
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 12px 12px 0 0;
+    padding: 6px 16px 6px;
   }
   .month-nav-inner {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    max-width: 340px;
-    margin: 0 auto;
   }
   .month-label {
     display: inline-flex;
@@ -1630,6 +1752,7 @@
     .month-arrow:hover,
     .month-arrow[disabled]:hover { background: var(--card); }
     .month-label.actionable:hover { background: var(--hairline); }
+    .flip-zone:hover .flip-hint { color: var(--ink); }
     .tab-btn:not(.active):hover { background: var(--hairline); }
     #resetBtn:hover { color: var(--expense); }
     .help-link:hover { color: var(--ink); }
@@ -1685,14 +1808,6 @@
     .tile-label { font-size: 13px; }
     .tile.wide .tile-label { font-size: 14px; }
     .entry-content { min-height: 64px; }
-    /* Bleed has to track .wrap's padding, which is 32px here rather than the
-       20px the mobile rule assumes. */
-    .month-nav {
-      margin-left: -32px;
-      margin-right: -32px;
-      padding-left: 32px;
-      padding-right: 32px;
-    }
   }
 
   /* On a pointer device the full-screen keypad takeover feels wrong;
@@ -1807,13 +1922,29 @@
     </div>
   </div>
 
-  <div class="balance-card">
-    <select id="currencySelect" aria-label="Display currency"></select>
-    <p class="balance-label">Net</p>
-    <p class="balance-amount" id="balanceAmount">$0.00</p>
-    <div class="balance-sub">
-      <span class="in">In: <span id="totalIn">$0.00</span></span>
-      <span class="out">Out: <span id="totalOut">$0.00</span></span>
+  <div class="balance-flip">
+    <div class="flip-zone" id="flipZone" role="button" tabindex="0" aria-label="Flip between calendar and summary">
+      <div class="flip-hint" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"></polyline>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+          <polyline points="7 23 3 19 7 15"></polyline>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+        </svg>
+      </div>
+      <div class="flip-inner">
+        <div class="face front" id="calFace"></div>
+        <div class="face back">
+          <select id="currencySelect" aria-label="Display currency"></select>
+          <p class="balance-label">Net</p>
+          <p class="balance-amount" id="balanceAmount">$0.00</p>
+          <div class="balance-sub">
+            <span class="in">In: <span id="totalIn">$0.00</span></span>
+            <span class="out">Out: <span id="totalOut">$0.00</span></span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2098,6 +2229,8 @@
   const monthLabelTextEl = document.getElementById('monthLabelText');
   const monthPrevEl = document.getElementById('monthPrev');
   const monthNextEl = document.getElementById('monthNext');
+  const flipZoneEl = document.getElementById('flipZone');
+  const calFaceEl = document.getElementById('calFace');
   const tileGridEl = document.getElementById('tileGrid');
   const currencySelectEl = document.getElementById('currencySelect');
   const resetBtn = document.getElementById('resetBtn');
@@ -2490,6 +2623,14 @@
     } catch (e) {
       return '$' + n.toFixed(2);
     }
+  }
+  // Calendar day cells have no room for a currency symbol or cents, so large
+  // amounts get rounded to one decimal and a k/M suffix instead of wrapping.
+  function compactAmt(n) {
+    const abs = Math.round(Math.abs(n));
+    if (abs >= 1000000) return String(Math.round(abs / 100000) / 10) + 'M';
+    if (abs >= 1000) return String(Math.round(abs / 100) / 10) + 'k';
+    return String(abs);
   }
   function formatDate(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
@@ -2885,6 +3026,18 @@
   }
   helpBtn.addEventListener('click', openHelp);
   helpClose.addEventListener('click', closeHelp);
+
+  // flipZone is a div (not a button) because the summary face holds a real
+  // <select> — nesting interactive controls inside a <button> is invalid and
+  // unreliable across browsers. role="button" + this keydown handler restore
+  // the same keyboard behavior a native button would give for free.
+  function toggleFlip() { flipZoneEl.classList.toggle('flipped'); }
+  flipZoneEl.addEventListener('click', toggleFlip);
+  flipZoneEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFlip(); }
+  });
+  // Selecting a currency shouldn't also flip the card back to the calendar.
+  currencySelectEl.addEventListener('click', (e) => e.stopPropagation());
   // Desktop-only backdrop: clicking outside the sheet dismisses it, same as
   // the calculator overlay's desktop treatment.
   helpOverlay.addEventListener('click', (e) => {
@@ -4151,6 +4304,110 @@
     showSheet();
   }
 
+  /* Calendar face of the balance card: one cell per day of viewMonth, tinted
+     by that day's net direction. Tint intensity is scaled to the month's own
+     largest single-day expense rather than a fixed dollar amount, so the
+     heatmap reads sensibly regardless of currency or how big the numbers
+     run — the same reason day amounts go through compactAmt(). */
+  function buildCalendarFace(entries) {
+    const y = viewMonth.getFullYear();
+    const m = viewMonth.getMonth();
+    const numDays = daysInMonth(y, m);
+    const firstDow = new Date(y, m, 1).getDay();
+
+    const isCurrentMonth = viewMonth.getTime() === currentMonthStart().getTime();
+    const isFutureMonth = viewMonth.getTime() > currentMonthStart().getTime();
+    const todayDate = new Date().getDate();
+
+    const totals = {};
+    entries.forEach(e => {
+      const day = Number((e.date || '').slice(8, 10));
+      if (!day) return;
+      if (!totals[day]) totals[day] = { in: 0, out: 0 };
+      if (e.type === 'income') totals[day].in += e.amount; else totals[day].out += e.amount;
+    });
+
+    // Reduce each day to a single signed figure: pure income, pure expense,
+    // or (rare) the net of both, colored by whichever direction won.
+    const dayInfo = {};
+    let maxExpAmt = 0;
+    for (let day = 1; day <= numDays; day++) {
+      const t = totals[day];
+      if (!t || (t.in === 0 && t.out === 0)) continue;
+      const net = t.in - t.out;
+      if (t.out === 0) {
+        dayInfo[day] = { type: 'inc', amt: t.in };
+      } else if (t.in === 0) {
+        dayInfo[day] = { type: 'exp', amt: t.out };
+        maxExpAmt = Math.max(maxExpAmt, t.out);
+      } else if (net >= 0) {
+        dayInfo[day] = { type: 'inc', amt: net };
+      } else {
+        dayInfo[day] = { type: 'exp', amt: -net };
+        maxExpAmt = Math.max(maxExpAmt, -net);
+      }
+    }
+    function tierFor(amt) {
+      if (maxExpAmt <= 0) return 't1';
+      const ratio = amt / maxExpAmt;
+      if (ratio >= 0.66) return 't3';
+      if (ratio >= 0.33) return 't2';
+      return 't1';
+    }
+
+    calFaceEl.innerHTML = '';
+
+    const dow = document.createElement('div');
+    dow.className = 'cal-dow';
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(l => {
+      const span = document.createElement('span');
+      span.textContent = l;
+      dow.appendChild(span);
+    });
+
+    const grid = document.createElement('div');
+    grid.className = 'cal-grid';
+    const trailing = (7 - ((firstDow + numDays) % 7)) % 7;
+
+    for (let i = 0; i < firstDow; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'day blank';
+      grid.appendChild(blank);
+    }
+    for (let day = 1; day <= numDays; day++) {
+      const isFuture = isFutureMonth || (isCurrentMonth && day > todayDate);
+      const isToday = isCurrentMonth && day === todayDate;
+      const classes = ['day'];
+      if (isFuture) classes.push('future');
+      if (isToday) classes.push('today');
+
+      let amtHtml = '';
+      const info = dayInfo[day];
+      if (info) {
+        classes.push(info.type === 'inc' ? 'inc' : tierFor(info.amt));
+        amtHtml = '<span class="a">' + (info.type === 'inc' ? '+' : '') + compactAmt(info.amt) + '</span>';
+      }
+
+      const cell = document.createElement('div');
+      cell.className = classes.join(' ');
+      cell.innerHTML = '<span class="n">' + day + '</span>' + amtHtml;
+      grid.appendChild(cell);
+    }
+    for (let i = 0; i < trailing; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'day blank';
+      grid.appendChild(blank);
+    }
+
+    const legend = document.createElement('div');
+    legend.className = 'cal-legend';
+    legend.innerHTML = '<span><i class="exp"></i>Expense</span><span><i class="inc"></i>Income</span>';
+
+    calFaceEl.appendChild(dow);
+    calFaceEl.appendChild(grid);
+    calFaceEl.appendChild(legend);
+  }
+
   function render() {
     const entries = loadEntries();
 
@@ -4181,6 +4438,7 @@
     balanceAmountEl.classList.toggle('negative', net < 0);
     totalInEl.textContent = formatMoney(monthIn);
     totalOutEl.textContent = formatMoney(monthOut);
+    buildCalendarFace(visible);
 
     if (visible.length === 0) {
       emptyStateEl.textContent = `No entries in ${monthName}.`;
