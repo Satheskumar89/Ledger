@@ -800,6 +800,60 @@
     font-family: inherit;
   }
   .backup-btn:active { background: var(--hairline); }
+  .backup-btn.full { width: 100%; }
+
+  /* No accounts — a self-chosen code is the only key, so restoring after a
+     wipe means either the URL (see setSyncCode's location.hash) or this
+     panel survived, which is why the hint below tells people to bookmark
+     the page rather than just trust local storage. */
+  .sync-block { margin-top: 20px; }
+  .sync-restore-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .sync-restore-row .note-input { flex: 1; }
+  .sync-restore-row .backup-btn {
+    flex: 0 0 auto;
+    padding: 0 16px;
+  }
+  .sync-code-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sync-code-row code {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--shell);
+    color: var(--ink);
+    font-size: 14px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .sync-code-row .backup-btn {
+    flex: 0 0 auto;
+    padding: 0 16px;
+  }
+  .sync-hint {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 10px 0 0;
+  }
+  .sync-status {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin: 8px 0 0;
+    min-height: 16px;
+  }
 
   /* Calculator overlay.
      Presented as a sheet that slides up, the way every native iOS modal
@@ -2000,6 +2054,33 @@
     <button type="button" class="backup-btn" id="importBtn">Import backup</button>
     <input type="file" id="importFile" accept="application/json" style="display:none;">
   </div>
+
+  <div class="sync-block">
+    <p class="section-label">Sync across your devices</p>
+    <div id="syncOff">
+      <button type="button" class="backup-btn full" id="enableSyncBtn">Enable cloud sync</button>
+      <div class="sync-restore-row">
+        <input type="text" id="syncCodeInput" class="note-input" placeholder="Have a code? Enter it to restore"
+               autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="backup-btn" id="restoreSyncBtn">Restore</button>
+      </div>
+    </div>
+    <div id="syncOn" hidden>
+      <div class="sync-code-row">
+        <code id="syncCodeDisplay"></code>
+        <button type="button" class="backup-btn" id="copySyncCodeBtn">Copy</button>
+      </div>
+      <p class="sync-hint">This code is how you get your data back if this device's storage is
+        ever cleared — bookmark this page or add it to your home screen now, so the code isn't
+        lost along with it.</p>
+      <div class="backup-row">
+        <button type="button" class="backup-btn" id="syncNowBtn">Sync now</button>
+        <button type="button" class="backup-btn" id="disableSyncBtn">Turn off</button>
+      </div>
+      <p class="sync-status" id="syncStatus" aria-live="polite"></p>
+    </div>
+  </div>
+
   <button type="button" class="reset-link help-link" id="helpBtn">Help</button>
 </div>
 
@@ -2141,6 +2222,7 @@
   const STORAGE_KEY = 'ledger_entries_v2';
   const CURRENCY_KEY = 'ledger_currency_v1';
   const REPEATS_KEY = 'ledger_repeats_v1';
+  const SYNC_CODE_KEY = 'ledger_sync_code_v1';
 
   const memoryStore = {};
   const safeStorage = (function () {
@@ -2264,6 +2346,16 @@
   const exportBtn = document.getElementById('exportBtn');
   const importBtn = document.getElementById('importBtn');
   const importFile = document.getElementById('importFile');
+  const syncOffEl = document.getElementById('syncOff');
+  const syncOnEl = document.getElementById('syncOn');
+  const syncCodeInputEl = document.getElementById('syncCodeInput');
+  const syncCodeDisplayEl = document.getElementById('syncCodeDisplay');
+  const syncStatusEl = document.getElementById('syncStatus');
+  const enableSyncBtn = document.getElementById('enableSyncBtn');
+  const restoreSyncBtn = document.getElementById('restoreSyncBtn');
+  const copySyncCodeBtn = document.getElementById('copySyncCodeBtn');
+  const syncNowBtn = document.getElementById('syncNowBtn');
+  const disableSyncBtn = document.getElementById('disableSyncBtn');
   const helpBtn = document.getElementById('helpBtn');
   const helpOverlay = document.getElementById('helpOverlay');
   const helpClose = document.getElementById('helpClose');
@@ -2369,6 +2461,7 @@
       safeStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
       entriesCache = entries;
       maxMonthCache = null;
+      schedulePush();
       return true;
     } catch (e) {
       // Quota errors were swallowed here, so a failed write looked like a
@@ -2414,6 +2507,7 @@
     try {
       safeStorage.setItem(REPEATS_KEY, JSON.stringify(list));
       repeatsCache = list;
+      schedulePush();
       return true;
     } catch (e) {
       // Same contract as saveEntries: never let a failed write look like a
@@ -2643,7 +2737,181 @@
   }
   function setCurrency(code) {
     try { safeStorage.setItem(CURRENCY_KEY, code); } catch (e) {}
+    schedulePush();
   }
+
+  /* ---- Cloud sync -------------------------------------------------------
+     No accounts: a self-chosen code is the whole trust model, same as a
+     Google Docs link — whoever holds it can read or overwrite that ledger.
+     That's fine for one person's own devices, which is what this is for.
+
+     The code is kept in both localStorage AND the URL hash. localStorage
+     alone isn't enough — it's exactly what a "storage cleared" wipe takes
+     with it — so the hash is the real recovery path: bookmark the page (or
+     add it to the home screen) once sync is on, and the code survives a
+     wipe even though nothing else does. */
+  const SYNC_WORDS = ['amber', 'birch', 'cedar', 'delta', 'ember', 'flint', 'grove', 'haven',
+    'ivory', 'jasper', 'koala', 'lumen', 'maple', 'nomad', 'otter', 'pilot', 'quartz', 'raven',
+    'swift', 'terra'];
+
+  function randomSyncCode() {
+    const word = SYNC_WORDS[Math.floor(Math.random() * SYNC_WORDS.length)];
+    const digits = Math.floor(1000 + Math.random() * 9000);
+    const tail = Math.random().toString(36).slice(2, 6);
+    return `${word}-${digits}-${tail}`;
+  }
+
+  function getSyncCode() {
+    const fromHash = new URLSearchParams(location.hash.slice(1)).get('sync');
+    if (fromHash) {
+      try { safeStorage.setItem(SYNC_CODE_KEY, fromHash); } catch (e) {}
+      return fromHash;
+    }
+    try { return safeStorage.getItem(SYNC_CODE_KEY); } catch (e) { return null; }
+  }
+
+  function setSyncCode(code) {
+    try { safeStorage.setItem(SYNC_CODE_KEY, code); } catch (e) {}
+    const params = new URLSearchParams(location.hash.slice(1));
+    params.set('sync', code);
+    history.replaceState(null, '', '#' + params.toString());
+  }
+
+  function clearSyncCode() {
+    try { safeStorage.removeItem(SYNC_CODE_KEY); } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  function syncPayload() {
+    return {
+      updatedAt: new Date().toISOString(),
+      currency: getCurrency(),
+      entries: loadEntries(),
+      repeats: loadRepeats()
+    };
+  }
+
+  function applyCloudPayload(data) {
+    saveEntries(Array.isArray(data.entries) ? data.entries : []);
+    saveRepeats(Array.isArray(data.repeats) ? data.repeats : []);
+    if (data.currency) setCurrency(data.currency);
+    currencySelectEl.value = getCurrency();
+    render();
+  }
+
+  function setSyncStatus(msg) {
+    if (syncStatusEl) syncStatusEl.textContent = msg;
+  }
+
+  async function pushToCloud(code) {
+    try {
+      const res = await fetch(`/api/sync/${encodeURIComponent(code)}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(syncPayload())
+      });
+      setSyncStatus(res.ok ? 'Synced just now' : 'Sync failed — will retry on next change');
+    } catch (e) {
+      setSyncStatus('Offline — will retry on next change');
+    }
+  }
+
+  async function pullFromCloud(code) {
+    const res = await fetch(`/api/sync/${encodeURIComponent(code)}`);
+    if (!res.ok) throw new Error('Sync request failed');
+    return res.json();
+  }
+
+  // Coalesces bursts of edits (e.g. typing a memo) into one push rather than
+  // one per keystroke-triggered save.
+  let pushTimer = null;
+  function schedulePush() {
+    const code = getSyncCode();
+    if (!code) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => pushToCloud(code), 1500);
+  }
+
+  function refreshSyncUI() {
+    const code = getSyncCode();
+    syncOffEl.hidden = !!code;
+    syncOnEl.hidden = !code;
+    if (code) syncCodeDisplayEl.textContent = code;
+  }
+
+  enableSyncBtn.addEventListener('click', async () => {
+    const code = randomSyncCode();
+    setSyncCode(code);
+    refreshSyncUI();
+    setSyncStatus('Syncing…');
+    await pushToCloud(code);
+  });
+
+  restoreSyncBtn.addEventListener('click', async () => {
+    const code = syncCodeInputEl.value.trim().toLowerCase();
+    if (!code) return;
+    restoreSyncBtn.disabled = true;
+    try {
+      const cloud = await pullFromCloud(code);
+      if (!cloud) { alert('No data found for that code yet.'); return; }
+      if ((loadEntries().length || loadRepeats().length) &&
+          !confirm('This replaces your current entries with the ones stored under that code. Continue?')) {
+        return;
+      }
+      setSyncCode(code);
+      applyCloudPayload(cloud);
+      refreshSyncUI();
+      showToast(`Restored ${cloud.entries.length} entries from cloud`);
+    } catch (e) {
+      alert('Could not reach the sync server. Check your connection and try again.');
+    } finally {
+      syncCodeInputEl.value = '';
+      restoreSyncBtn.disabled = false;
+    }
+  });
+
+  copySyncCodeBtn.addEventListener('click', async () => {
+    const code = getSyncCode();
+    try {
+      await navigator.clipboard.writeText(code);
+      setSyncStatus('Code copied');
+    } catch (e) {
+      setSyncStatus('Could not copy — select the code above manually');
+    }
+  });
+
+  syncNowBtn.addEventListener('click', async () => {
+    const code = getSyncCode();
+    if (!code) return;
+    setSyncStatus('Syncing…');
+    await pushToCloud(code);
+  });
+
+  disableSyncBtn.addEventListener('click', () => {
+    if (!confirm('Turn off sync on this device? Your data stays saved under this code — ' +
+                  'entering the code again (here or on another device) restores it.')) return;
+    clearSyncCode();
+    refreshSyncUI();
+  });
+
+  // Only pulls when this device is empty — e.g. a fresh install, or local
+  // storage was just cleared — so it can never silently overwrite entries
+  // already sitting on the device with an older cloud snapshot.
+  async function restoreFromCloudIfEmpty() {
+    const code = getSyncCode();
+    if (!code) return;
+    if (loadEntries().length || loadRepeats().length) return;
+    try {
+      const cloud = await pullFromCloud(code);
+      if (cloud && ((cloud.entries && cloud.entries.length) || (cloud.repeats && cloud.repeats.length))) {
+        applyCloudPayload(cloud);
+        showToast(`Restored ${cloud.entries.length} entries from cloud`);
+      }
+    } catch (e) {
+      // Offline or nothing stored yet — the app just stays local-only for now.
+    }
+  }
+
   function formatMoney(n) {
     try {
       return new Intl.NumberFormat(undefined, { style: 'currency', currency: getCurrency() }).format(n);
@@ -4648,6 +4916,8 @@
   initKeypad();
   updateMonthLabel();
   render();
+  refreshSyncUI();
+  restoreFromCloudIfEmpty();
 </script>
 </body>
 </html>
