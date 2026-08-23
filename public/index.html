@@ -2169,10 +2169,11 @@
 
    <div class="help-section">
     <h3>Sync across your devices</h3>
-    <p>Tap <strong>Enable cloud sync</strong> at the bottom of the page to get a sync code, something like <code>otter-4821-a1b2</code>. Entering that same code on another device — or on this one after its storage has been cleared — restores everything: entries, repeats, and your currency setting.</p>
+    <p>Tap <strong>Enable cloud sync</strong> at the bottom of the page to get a sync code, something like <code>otter-4821-a1b2</code>. Enter that same code on another device to link it to the same ledger — entries, repeats, and your currency setting all travel with it.</p>
+    <p>Once two devices share a code, opening the app on either one compares timestamps and brings the older side up to date automatically — add an expense on your phone, then open this page on your laptop, and it appears there without doing anything else. Editing on both at the exact same moment isn't something this resolves — whichever save reaches the cloud last simply wins — so it's built for one person moving between their own devices, not several people editing at once.</p>
     <p>There's no password. The code itself is what protects your data, the same way a shared Google Docs link works — anyone holding it can read or overwrite that ledger, so treat it like a link you wouldn't want posted publicly.</p>
     <p><strong>Bookmark this page, or add it to your Home Screen, once sync is on.</strong> The code is saved on this device too, but that's exactly what a storage wipe takes with it — the bookmarked link is the real safety net, since the code travels along with it.</p>
-    <p>Changes after that sync in the background on their own. <strong>Sync now</strong> forces an immediate push if you don't want to wait; <strong>Turn off</strong> stops syncing this device without deleting what's already stored under the code.</p>
+    <p><strong>Sync now</strong> checks and reconciles immediately if you don't want to wait for the next launch; <strong>Turn off</strong> stops syncing this device without deleting what's already stored under the code.</p>
    </div>
 
    <div class="help-section">
@@ -2472,6 +2473,7 @@
       safeStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
       entriesCache = entries;
       maxMonthCache = null;
+      touchLocalUpdatedAt();
       schedulePush();
       return true;
     } catch (e) {
@@ -2518,6 +2520,7 @@
     try {
       safeStorage.setItem(REPEATS_KEY, JSON.stringify(list));
       repeatsCache = list;
+      touchLocalUpdatedAt();
       schedulePush();
       return true;
     } catch (e) {
@@ -2748,6 +2751,7 @@
   }
   function setCurrency(code) {
     try { safeStorage.setItem(CURRENCY_KEY, code); } catch (e) {}
+    touchLocalUpdatedAt();
     schedulePush();
   }
 
@@ -2793,9 +2797,40 @@
     history.replaceState(null, '', location.pathname + location.search);
   }
 
+  // Last time THIS device's data changed — separate from "last successfully
+  // pushed", so reconcileWithCloud() can tell whether local or cloud is
+  // actually the newer copy instead of just trusting whichever it saw last.
+  const LOCAL_UPDATED_KEY = 'ledger_local_updated_v1';
+
+  // Set while applying a payload that came FROM the cloud, so that write
+  // doesn't turn around and schedule a push of the exact data it just
+  // received, or stamp "now" over the timestamp that payload actually came
+  // with.
+  let applyingRemote = false;
+
+  function touchLocalUpdatedAt() {
+    if (applyingRemote) return;
+    try { safeStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString()); } catch (e) {}
+  }
+
+  function getLocalUpdatedAt() {
+    const stored = safeStorage.getItem(LOCAL_UPDATED_KEY);
+    if (stored) return stored;
+    // Upgrading from a version that didn't track this yet: existing local
+    // data with no timestamp is treated as current (not as ancient/epoch
+    // zero), so a cloud copy from before this device ever synced can't look
+    // newer by default and silently win.
+    if (loadEntries().length || loadRepeats().length) {
+      const now = new Date().toISOString();
+      try { safeStorage.setItem(LOCAL_UPDATED_KEY, now); } catch (e) {}
+      return now;
+    }
+    return null;
+  }
+
   function syncPayload() {
     return {
-      updatedAt: new Date().toISOString(),
+      updatedAt: getLocalUpdatedAt() || new Date().toISOString(),
       currency: getCurrency(),
       entries: loadEntries(),
       repeats: loadRepeats()
@@ -2803,9 +2838,15 @@
   }
 
   function applyCloudPayload(data) {
-    saveEntries(Array.isArray(data.entries) ? data.entries : []);
-    saveRepeats(Array.isArray(data.repeats) ? data.repeats : []);
-    if (data.currency) setCurrency(data.currency);
+    applyingRemote = true;
+    try {
+      saveEntries(Array.isArray(data.entries) ? data.entries : []);
+      saveRepeats(Array.isArray(data.repeats) ? data.repeats : []);
+      if (data.currency) setCurrency(data.currency);
+    } finally {
+      applyingRemote = false;
+    }
+    try { safeStorage.setItem(LOCAL_UPDATED_KEY, data.updatedAt || new Date().toISOString()); } catch (e) {}
     currencySelectEl.value = getCurrency();
     render();
   }
@@ -2837,6 +2878,7 @@
   // one per keystroke-triggered save.
   let pushTimer = null;
   function schedulePush() {
+    if (applyingRemote) return;
     const code = getSyncCode();
     if (!code) return;
     clearTimeout(pushTimer);
@@ -2853,6 +2895,7 @@
   enableSyncBtn.addEventListener('click', async () => {
     const code = randomSyncCode();
     setSyncCode(code);
+    touchLocalUpdatedAt();
     refreshSyncUI();
     setSyncStatus('Syncing…');
     await pushToCloud(code);
@@ -2891,12 +2934,7 @@
     }
   });
 
-  syncNowBtn.addEventListener('click', async () => {
-    const code = getSyncCode();
-    if (!code) return;
-    setSyncStatus('Syncing…');
-    await pushToCloud(code);
-  });
+  syncNowBtn.addEventListener('click', () => reconcileWithCloud(true));
 
   disableSyncBtn.addEventListener('click', () => {
     if (!confirm('Turn off sync on this device? Your data stays saved under this code — ' +
@@ -2905,23 +2943,54 @@
     refreshSyncUI();
   });
 
-  // Only pulls when this device is empty — e.g. a fresh install, or local
-  // storage was just cleared — so it can never silently overwrite entries
-  // already sitting on the device with an older cloud snapshot.
-  async function restoreFromCloudIfEmpty() {
+  /* Two-way sync: whichever side — this device or the cloud — changed more
+     recently wins, and the other side is brought up to match. This runs on
+     every launch and whenever the app comes back into view (see the
+     visibilitychange listener below), which is what makes "open it on
+     another device" actually pick up what you last did elsewhere, not just
+     restore an empty one.
+
+     Deliberately no confirmation prompt here, unlike the manual "Restore by
+     code" flow — that's for deliberately adopting a code you typed in;
+     this is routine reconciliation of a device against its own code, which
+     needs to just happen for sync to feel automatic. */
+  let reconciling = false;
+  async function reconcileWithCloud(manual) {
     const code = getSyncCode();
     if (!code) return;
-    if (loadEntries().length || loadRepeats().length) return;
+    if (reconciling) return;
+    reconciling = true;
+    if (manual) setSyncStatus('Syncing…');
     try {
       const cloud = await pullFromCloud(code);
-      if (cloud && ((cloud.entries && cloud.entries.length) || (cloud.repeats && cloud.repeats.length))) {
+      const localAt = getLocalUpdatedAt();
+      const localTime = localAt ? new Date(localAt).getTime() : 0;
+
+      if (!cloud) {
+        // Nothing stored under this code yet — this device is the source.
+        await pushToCloud(code);
+        return;
+      }
+
+      const cloudTime = cloud.updatedAt ? new Date(cloud.updatedAt).getTime() : 0;
+      if (cloudTime > localTime) {
         applyCloudPayload(cloud);
-        showToast(`Restored ${cloud.entries.length} entries from cloud`);
+        showToast(`Synced ${cloud.entries.length} entries from your other device`);
+      } else if (localTime > cloudTime) {
+        await pushToCloud(code);
+      } else if (manual) {
+        setSyncStatus('Already up to date');
       }
     } catch (e) {
-      // Offline or nothing stored yet — the app just stays local-only for now.
+      setSyncStatus('Offline — showing what was last saved here');
+    } finally {
+      reconciling = false;
     }
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') reconcileWithCloud(false);
+  });
 
   function formatMoney(n) {
     try {
@@ -4932,7 +5001,7 @@
   updateMonthLabel();
   render();
   refreshSyncUI();
-  restoreFromCloudIfEmpty();
+  reconcileWithCloud(false);
 </script>
 </body>
 </html>
