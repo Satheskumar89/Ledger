@@ -16,7 +16,7 @@
       // Find this on the Worker's own "Bindings" tab (where you added the
       // binding via the UI earlier) — it's shown next to the LEDGER_SYNC
       // entry, or on the namespace's own page under Storage & Databases > KV.
-      "id": "LEDGER_SYNC"
+      "id": "59f8cca1cfe844579aa75f637a42d3a4"
     }
   ]
 }
