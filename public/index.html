@@ -300,6 +300,12 @@
     color: var(--ink-soft);
     margin: 0 0 10px 2px;
   }
+  /* Landing spot for the tab-click scroll (see scrollToTabs) — stopping here
+     rather than at the tab row itself keeps the category tiles in view, so
+     the jump reads as "bring the list closer" rather than "snap to top". */
+  #categorySectionLabel {
+    scroll-margin-top: 74px;
+  }
 
   /* Ten categories, four columns, three rows — every category on screen with
      no sideways scroll and no part-empty row.
@@ -531,9 +537,6 @@
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 10px;
-    /* Offsets scrollIntoView so the tab row lands clear of the sticky
-       month-nav (~58px) instead of tucked underneath it. */
-    scroll-margin-top: 74px;
   }
   /* The month is now the scope for the whole view, so it stays pinned
      while you scroll rather than scrolling away above the entries. It reads
@@ -2027,7 +2030,7 @@
     </div>
   </div>
 
-  <p class="section-label">Choose a category to add</p>
+  <p class="section-label" id="categorySectionLabel">Choose a category to add</p>
   <div class="tile-grid" id="tileGrid"></div>
 
   <div class="tab-row">
@@ -2160,8 +2163,16 @@
 
    <div class="help-section">
     <h3>Where your data lives</h3>
-    <p>Everything is stored locally in this browser, on this device. There's no account and nothing is sent anywhere.</p>
-    <p>That also means it isn't synced — a different browser, a different device, or a cleared cache won't have it. Use <strong>Export backup</strong> to keep a copy somewhere safe.</p>
+    <p>Everything is stored locally in this browser, on this device, by default. There's no account, and nothing leaves this device unless you turn on sync yourself.</p>
+    <p>That also means a different browser, a different device, or a cleared cache won't have it — unless you've set up <strong>Sync across your devices</strong> below, or kept an <strong>Export backup</strong> file.</p>
+   </div>
+
+   <div class="help-section">
+    <h3>Sync across your devices</h3>
+    <p>Tap <strong>Enable cloud sync</strong> at the bottom of the page to get a sync code, something like <code>otter-4821-a1b2</code>. Entering that same code on another device — or on this one after its storage has been cleared — restores everything: entries, repeats, and your currency setting.</p>
+    <p>There's no password. The code itself is what protects your data, the same way a shared Google Docs link works — anyone holding it can read or overwrite that ledger, so treat it like a link you wouldn't want posted publicly.</p>
+    <p><strong>Bookmark this page, or add it to your Home Screen, once sync is on.</strong> The code is saved on this device too, but that's exactly what a storage wipe takes with it — the bookmarked link is the real safety net, since the code travels along with it.</p>
+    <p>Changes after that sync in the background on their own. <strong>Sync now</strong> forces an immediate push if you don't want to wait; <strong>Turn off</strong> stops syncing this device without deleting what's already stored under the code.</p>
    </div>
 
    <div class="help-section">
@@ -3588,8 +3599,12 @@
   // clear of the calendar/category tiles above rather than leaving the user
   // to scroll past them by hand.
   function scrollToTabs() {
+    // Lands on the category label rather than the tab row itself, so the
+    // tiles stay in view and the jump reads as "bring the list closer"
+    // rather than "snap all the way back to the top of the page".
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelector('.tab-row').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    document.getElementById('categorySectionLabel')
+      .scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   }
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
