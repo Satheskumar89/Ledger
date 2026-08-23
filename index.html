@@ -89,6 +89,24 @@
     padding-right: max(20px, env(safe-area-inset-right));
     padding-bottom: calc(48px + env(safe-area-inset-bottom));
   }
+  /* Stands in for the old page title — this is the app's only header now,
+     so it gets real weight rather than reading as a stray caption. */
+  .greeting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    font-size: 26px;
+    color: var(--ink);
+    margin: 0 0 20px;
+  }
+  .greeting-icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--accent-text);
+  }
+  .greeting-icon svg { width: 24px; height: 24px; }
   /* A set-once preference, so it reads as quiet text — but keeps a full
      44pt hit area via padding rather than visible bulk. */
   #currencySelect {
@@ -1911,6 +1929,10 @@
 </head>
 <body>
 <div class="wrap">
+  <p class="greeting">
+    <span class="greeting-icon" id="greetingIcon" aria-hidden="true"></span>
+    <span id="greetingLabel"></span>
+  </p>
   <div class="month-nav">
     <div class="month-nav-inner">
       <button type="button" class="month-arrow" id="monthPrev" aria-label="Previous month">‹</button>
@@ -2225,6 +2247,8 @@
   const dueCountEl = document.getElementById('dueCount');
   const swipeHintEl = document.getElementById('swipeHint');
   const tabButtons = document.querySelectorAll('.tab-btn');
+  const greetingIconEl = document.getElementById('greetingIcon');
+  const greetingLabelEl = document.getElementById('greetingLabel');
   const monthLabelEl = document.getElementById('monthLabel');
   const monthLabelTextEl = document.getElementById('monthLabelText');
   const monthPrevEl = document.getElementById('monthPrev');
@@ -3126,6 +3150,28 @@
   function todayStr() {
     return toDateInputValue(new Date());
   }
+  // Set once on load rather than in render() — it's a function of the clock,
+  // not the data, and doesn't need to redraw every time entries change.
+  function greetingState() {
+    const h = new Date().getHours();
+    if (h < 5) return 'evening';
+    if (h < 12) return 'morning';
+    if (h < 17) return 'afternoon';
+    return 'evening';
+  }
+  const GREETING_LABELS = {
+    morning: 'Good morning',
+    afternoon: 'Good afternoon',
+    evening: 'Good evening'
+  };
+  // Same line weight and stroke as the rest of the app's icons (see
+  // iconSvg/uiIcon) — sunrise, sun, and crescent moon for the three bands
+  // greetingState() buckets the clock into.
+  const GREETING_ICONS = {
+    morning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><path d="M5.6 8.6l1.4 1.4"/><path d="M18.4 8.6l-1.4 1.4"/><path d="M3 15h18"/><path d="M7 15a5 5 0 0 1 10 0"/></svg>',
+    afternoon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5"/><path d="M12 19v2.5"/><path d="M4.5 4.5l1.8 1.8"/><path d="M17.7 17.7l1.8 1.8"/><path d="M2.5 12h2.5"/><path d="M19 12h2.5"/><path d="M4.5 19.5l1.8-1.8"/><path d="M17.7 6.3l1.8-1.8"/></svg>',
+    evening: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>'
+  };
   function toDateInputValue(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -4580,6 +4626,9 @@
     reader.readAsText(file);
   });
 
+  const greeting = greetingState();
+  greetingLabelEl.textContent = GREETING_LABELS[greeting];
+  greetingIconEl.innerHTML = GREETING_ICONS[greeting];
   initCurrencySelect();
   initCatSelect();
   initTiles();
