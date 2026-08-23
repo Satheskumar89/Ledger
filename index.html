@@ -531,6 +531,9 @@
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 10px;
+    /* Offsets scrollIntoView so the tab row lands clear of the sticky
+       month-nav (~58px) instead of tucked underneath it. */
+    scroll-margin-top: 74px;
   }
   /* The month is now the scope for the whole view, so it stays pinned
      while you scroll rather than scrolling away above the entries. It reads
@@ -3313,8 +3316,18 @@
     }
     return 'entries';
   }
+  // Tapping a tab is a request to see that list now, so it scrolls itself
+  // clear of the calendar/category tiles above rather than leaving the user
+  // to scroll past them by hand.
+  function scrollToTabs() {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelector('.tab-row').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }
   tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    btn.addEventListener('click', () => {
+      activateTab(btn.dataset.tab);
+      scrollToTabs();
+    });
   });
 
   /* Which category's entries are showing. Kept outside the render so the
