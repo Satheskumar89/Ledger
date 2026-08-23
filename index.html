@@ -89,36 +89,6 @@
     padding-right: max(20px, env(safe-area-inset-right));
     padding-bottom: calc(48px + env(safe-area-inset-bottom));
   }
-  header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 24px;
-  }
-  header h1 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 400;
-    font-size: 24px;
-    margin: 0;
-  }
-  /* Ghost icon button, matching .calc-cancel's minimal chrome — the hit
-     area is a full 44pt square, pulled back with negative margin so the
-     visible glyph aligns with the title rather than the header edge. */
-  .help-btn {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    margin: -10px -10px 0 0;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--ink-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-  .help-btn svg { width: 22px; height: 22px; }
   /* A set-once preference, so it reads as quiet text — but keeps a full
      44pt hit area via padding rather than visible bulk. */
   #currencySelect {
@@ -1661,7 +1631,8 @@
     .month-arrow[disabled]:hover { background: var(--card); }
     .month-label.actionable:hover { background: var(--hairline); }
     .tab-btn:not(.active):hover { background: var(--hairline); }
-    .reset-link:hover { color: var(--expense); }
+    #resetBtn:hover { color: var(--expense); }
+    .help-link:hover { color: var(--ink); }
     .calc-cancel:hover { color: var(--ink); }
     .calc-key:hover { background: var(--hairline); }
     .calc-add-btn:hover { opacity: 0.88; }
@@ -1707,8 +1678,6 @@
       border-right: 1px solid var(--hairline);
       padding: 40px 32px 64px;
     }
-    header { margin-bottom: 28px; }
-    header h1 { font-size: 28px; }
     .balance-amount { font-size: 46px; }
     .tile-grid { gap: 12px; }
     .tile { min-height: 96px; }
@@ -1827,20 +1796,6 @@
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="titles">
-      <h1>Ledger</h1>
-    </div>
-    <button type="button" class="help-btn" id="helpBtn" aria-label="Help">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-    </button>
-  </header>
-
   <div class="month-nav">
     <div class="month-nav-inner">
       <button type="button" class="month-arrow" id="monthPrev" aria-label="Previous month">‹</button>
@@ -1889,6 +1844,7 @@
     <button type="button" class="backup-btn" id="importBtn">Import backup</button>
     <input type="file" id="importFile" accept="application/json" style="display:none;">
   </div>
+  <button type="button" class="reset-link help-link" id="helpBtn">Help</button>
 </div>
 
 <div class="calc-overlay" id="calcOverlay" role="dialog" aria-modal="true" aria-label="Add entry">
