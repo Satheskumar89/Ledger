@@ -1,0 +1,22 @@
+{
+  // Must exactly match your existing Worker's name — check the top of its
+  // Overview page in the dashboard, or the "<name>.<subdomain>.workers.dev"
+  // URL. Deploying with a different name creates a SEPARATE new Worker
+  // instead of updating this one.
+  "name": "REPLACE_WITH_YOUR_WORKER_NAME",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-23",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "LEDGER_SYNC",
+      // Find this on the Worker's own "Bindings" tab (where you added the
+      // binding via the UI earlier) — it's shown next to the LEDGER_SYNC
+      // entry, or on the namespace's own page under Storage & Databases > KV.
+      "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+    }
+  ]
+}
