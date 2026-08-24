@@ -112,7 +112,12 @@
     --on-accent: #FFFFFF;                  /* text/glyph on any tint fill */
     --on-ink: var(--ios-label-inverse);
     --sheet-bg: var(--ios-bg-2);           /* elevated sheet ground */
-    --key-bg: var(--ios-bg);               /* keypad key cap */
+    /* Keypad key cap. White on the #F2F2F7 sheet is only 1.12:1, so the colour
+       step is NOT what separates the caps here — --sh-key is, and a black
+       shadow works precisely because this ground is light. Dark has to override
+       BOTH (see the dark block): there the same rule produced #000 caps on
+       #1C1C1E with a black shadow over black, i.e. no edge at all. */
+    --key-bg: var(--ios-bg);
     --segment-track: var(--ios-fill-3);
     --segment-thumb: var(--ios-bg);
     --switch-off: var(--ios-switch-off);
@@ -324,6 +329,18 @@
       --overlay-dim: rgba(0, 0, 0, 0.48);
       --grabber: rgba(235, 235, 245, 0.30);
       --page-surround: #000000;
+      /* Keypad caps must be LIGHTER than the sheet in dark, which is the
+         opposite of light and matches iOS — its dark key caps sit above the
+         keyboard ground, not below it. Inheriting the light rule gave #000 caps
+         on the #1C1C1E sheet (1.23:1) AND killed --sh-key, since that shadow is
+         black-on-black here; the caps had no boundary in either channel and the
+         whole keypad read as smaller and weaker than the same keys in light.
+         #2C2C2E is the 1.6:1 step the --ios-grouped note above already names as
+         the escape hatch for dark flatness, and it does the separating on its
+         own — hence no shadow rather than a light one, which would read as a
+         glow under a key cap. */
+      --key-bg: var(--ios-bg-3);
+      --sh-key: none;
       /* No resting tint here either, matching light — so a tile is plain --card
          in BOTH themes and the grid reads the same way on either. The filled
          category glyphs carry the identity; earlier attempts at 24% and then
@@ -1470,11 +1487,19 @@
     transition: transform 0.3s var(--ease-sheet);
   }
   .calc-overlay.open .calc-sheet { transform: translateY(0); }
-  /* Top half is locked at exactly 50% of the sheet, not "whatever's left
+  /* The amount is locked to a fixed share of the sheet, not "whatever's left
      after the bottom claims its share" — the two previously competed via
-     flex-grow/shrink and the split drifted with content. */
+     flex-grow/shrink and the split drifted with content.
+
+     44 rather than the 50 this used to be. At 50/50 the keypad got 229px of a
+     783px sheet — 29% — while ~321px above it displayed a two-character number,
+     so the keys came out 114x51 (a very flat 2.2:1) under a large void and read
+     as undersized even though they clear the 44pt target. 44/56 takes the keys
+     to 114x63 and spends the difference on the half that's actually touched.
+     The amount still has far more room than it needs; don't go much below 40,
+     where clamp(44px, 16vw, 76px) digits start to crowd .calc-top. */
   .calc-top-half {
-    flex: 0 0 50%;
+    flex: 0 0 44%;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -1665,10 +1690,12 @@
     border-style: none;
   }
   .tag-chip.add-tag.active { background: var(--ios-fill-2); color: var(--accent-text); }
-  /* Exactly 50%, matching .calc-top-half — tags/keypad/button then split
-     that fixed box between them via their own flex rules. */
+  /* Takes the remaining 56% — .calc-top-half is the one with the fixed basis,
+     so the two still can't compete, and this claims whatever it leaves rather
+     than restating the complement. tags/keypad/button then split this box
+     between them via their own flex rules. */
   .calc-bottom {
-    flex: 0 0 50%;
+    flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -1813,26 +1840,29 @@
   /* Safety net for viewports shorter than any currently-supported iPhone
      (this class was discontinued when iOS 16 dropped support) — keeps the
      Add button reachable rather than clipped if content briefly exceeds
-     the 50% box, e.g. with the memo row open. */
-  /* .calc-bottom is a hard flex: 0 0 50%, and the keypad's grid rows are
-     minmax(46px, 1fr) — a MINIMUM track size, so the keypad cannot shrink
-     below 4 rows + gaps no matter how little room there is. That makes the
-     budget arithmetic load-bearing:
+     the bottom box, e.g. with the memo row open. */
+  /* .calc-bottom gets the 56% .calc-top-half's fixed 44% basis leaves, and the
+     keypad's grid rows are minmax(46px, 1fr) — a MINIMUM track size, so the
+     keypad cannot shrink below 4 rows + gaps no matter how little room there
+     is. That makes the budget arithmetic load-bearing:
 
-       available = viewport-height / 2
+       available = (viewport-height - 10) * 0.56    // 10 = .calc-sheet margin
        needed    = tags + (4*row + 3*gap + pad) + (btn + margins)
 
      Base rules need 48 + (4*46 + 3*6 + 6) + (50 + 14 + 16) = 336px, so they
-     are only safe above ~672px — hence the 700px threshold below rather than
-     the 600px one this used to have. (At 600 the band from ~601-671px
-     overflowed and pushed 'Add entry' under the fold; that was true before
-     this restyle too.) The block below needs
+     are safe above ~610px. The 700px threshold below is therefore no longer
+     the tight bound it was — at the old 50/50 split the same 336 needed
+     ~682px, which is what set it. It's kept deliberately: `needed` counts
+     margin-bottom as its bare 16 and ignores env(safe-area-inset-bottom),
+     which is 34 on every notched iPhone, so the real base requirement is
+     nearer 370 (~671px) and the slack above 610 is what absorbs it. The block
+     below needs
        44 + (4*36 + 3*4 + 4) + (44 + 8 + 10) = 266px,
-     which clears a 553px viewport (iPhone SE with Safari chrome) by 10px.
-     That 553 is the floor: a ~500px PORTRAIT viewport would still overflow,
-     but no shipping phone has one — anything shorter than this is landscape,
+     which now clears down to a ~485px viewport, well under the 553px floor
+     this had at 50/50 (iPhone SE with Safari chrome is ~553). Anything
+     shorter than that in PORTRAIT doesn't ship; shorter still is landscape,
      which the max-height: 460px block below handles under different rules.
-     Change any number here and re-run both sums. */
+     Change the split or any number here and re-run both sums. */
   @media (max-height: 700px) {
     .calc-tags { padding-bottom: 8px; }
     .calc-keypad { grid-template-rows: repeat(4, minmax(36px, 1fr)); gap: 4px; padding-top: 4px; }
