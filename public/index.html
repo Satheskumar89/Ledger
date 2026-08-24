@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<!-- Sibling-relative on purpose, NOT root-absolute. index.html and styles.css
+     always sit side by side, so this resolves correctly whether the page is
+     opened straight off disk (file://), served by an editor's preview rooted
+     anywhere, or served by the Worker with public/ as the asset root. A
+     leading slash only works in that last case. Bump ?v= whenever styles.css
+     changes: index.html is always revalidated, so a new HTML then points at a
+     new URL and the pair can't go out of sync in a cache. -->
+<link rel="stylesheet" href="styles.css?v=1">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%201024%22%3E%20%3Cstyle%3E%20.bg%7Bfill%3A%237C8B7A%7D.page%7Bfill%3A%23FAF8F3%7D.spine%7Bfill%3A%235C695A%7D.line%7Bfill%3A%238B9682%7D.coin%7Bfill%3A%234C7A5E%7D.mark%7Bstroke%3A%23FAF8F3%7D%20%40media%20%28prefers-color-scheme%3A%20dark%29%7B%20.bg%7Bfill%3A%239BAA98%7D.spine%7Bfill%3A%236E7C6C%7D.line%7Bfill%3A%23A3AE9B%7D.coin%7Bfill%3A%233E6B50%7D%20%7D%20%3C%2Fstyle%3E%20%3Crect%20width%3D%221024%22%20height%3D%221024%22%20rx%3D%22200%22%20class%3D%22bg%22%2F%3E%20%3CclipPath%20id%3D%22pg%22%3E%3Crect%20x%3D%22300%22%20y%3D%22210%22%20width%3D%22460%22%20height%3D%22620%22%20rx%3D%2234%22%2F%3E%3C%2FclipPath%3E%20%3Cg%20clip-path%3D%22url%28%23pg%29%22%3E%20%3Crect%20x%3D%22300%22%20y%3D%22210%22%20width%3D%22460%22%20height%3D%22620%22%20class%3D%22page%22%2F%3E%20%3Crect%20x%3D%22300%22%20y%3D%22210%22%20width%3D%2270%22%20height%3D%22620%22%20class%3D%22spine%22%2F%3E%20%3C%2Fg%3E%20%3Cg%20class%3D%22line%22%3E%20%3Crect%20x%3D%22430%22%20y%3D%22360%22%20width%3D%22260%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3Crect%20x%3D%22430%22%20y%3D%22460%22%20width%3D%22260%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3Crect%20x%3D%22430%22%20y%3D%22560%22%20width%3D%22260%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3Crect%20x%3D%22430%22%20y%3D%22660%22%20width%3D%22130%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3C%2Fg%3E%20%3Ccircle%20cx%3D%22720%22%20cy%3D%22800%22%20r%3D%22130%22%20class%3D%22coin%22%2F%3E%20%3Cpath%20d%3D%22M665%20805%20L705%20850%20L785%20745%22%20fill%3D%22none%22%20class%3D%22mark%22%20stroke-width%3D%2228%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
 <link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAADWElEQVR4nN2W329URRTHzznz4+69u3R7t61tg9sftIXS8iOEYMKjrxrDH2CMf4A++Gz8D0hMfNdIfFQJvqkxxEQTIoGEAKFgW0GoxkRSxGV376+ZOT5cu1np7e7awgvn7d6ZOZ+Z75lzzuAHZ9+H52n0XL2/EADZe5iZCRGpzz6YmZl3A5BSZlmWxFHvaUppJWUhY0cAIlprNzcfzU5NLy8etSZFxIJ5DEi0em/t4eZDWcTYAcCAhI3Hf288ePDKsZOvvfo6cAooiqY6ALXwy61PPj8ni7z1koiZpZTWOedsErWpKBLMrLWnpCQsjlP/ICMAERFRoUSISEQ7Rbg/oGNEJKUEBuhQGADBWtd7YX8AMwPg7fXbN+/c8LTH7Lb2TkkaHzl09PjyqT2dABEBuD5ZD6vhU2FwzlWCCrAtvmADAnIbroZhbaJgwKUAvVQaWKK1WyvrK57SbksNQkzSdHH+8JHFE3sPMo+EI0vzS0KIjq88E2vhyF5PkOs7PjY5Pj5dNG7A7S0GuURrd39ev7+uleqWKM2yuem5g3PLz0AizyuF1VAKycyIiIiAYIwpeX4P7wMB8uNPvTwzVV/o+m1zMFgLRIIEw67KNfwrEdzfuLvxx4aSKjPZzP6Z8ZcmnbWeHzSjVmKyOE0UFbsaUCI0xsRx5JRLs9RYK6XMmD/79suL1y41o7avPZ9pojS0G0CeybP1A3MHlgAYANikzPDRhXNfXfquWt4nSDTaTUaIbTZbHn1Kq4F6MjMnWRJHjSRqtlsNILq2evPrKz+MVmue0q04OnXo2Htn3v6tsdkwsUDqJvQC5J0WERFJCaWlVlIpqZD0jV9XnbO592pQeeeNNy/fuY6IT7L4f0hU8n2ttTGm2X6Sxi1CBADLXLJsTBalycn55dNLJwLP/+bqj99f/ykcGt5+ZbHHyy4vBkIIrXRnJQNIokdxa+Wv35Hh3TNvWWc/PP/pUFBOrFnYN1bTZcOuk9l9WmberaI4gq5akDAEJEa8yp9R4+wXHyNiueTHJhv1ysMqsF3e+wA6RiSg+24gAOBMuaZJPM4iyw4ZxoLKfn8YtqXboKVi2zcDQD0IJ9yQYStRKBKW3fZsHrThFJphJxAlKWY2/1Xm2QAQgLdqyU71+h+rbZfk4wv5SwAAAABJRU5ErkJggg==">
 <link rel="icon" type="image/png" sizes="16x16" media="(prefers-color-scheme: light)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABhklEQVR4nJXSO0tcURAH8Jk559xd9951113YgJGIeVgECwUrW79AqpRJk08hdpbW+QoW6dIJooXapAgBiZWwiBDBBFdld+9j9875WywSH1fBKYf5nTkzDK+ur9Bzwj5MMfO9DIBiwMwA0iz7T0DEFLigAIhIt9uNytGXj5+H+XCErXV/z/9t7m7JzRt3QJplkQtn387dbttqnG3tb3uAC78kRvq9TvukbYzRPK/X6oErPzU0AGfdeFQVEVVfGQtV/eMAYGb12k9iI0Y1D5yzNngcMAMQlsAFRkRFWET9Ex1uwoiICEC1sMokwqzwTFwAmFlVO1edZr35emZ2/+DHr6PD7iCNXFnh+R4A4L2vhNH7d3Njlejbzve1ja9vJqenGi1O0jAoeUBuV1triSnu97IsTeLe3u+fy/NLn5Y/XCb9WAfCDCJ+eHzlUsmDnJijzmmlMTHIh8d/ThZfzBhiFA4dJwkRpUQvw4nT84tM84XWtCEBoXhLxpjRzQF4VW0Sce51VE1E10AiqLh2N1JGAAAAAElFTkSuQmCC">
@@ -15,1971 +23,11 @@
 <meta name="apple-mobile-web-app-title" content="Ledger">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
-<meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1B1D18" media="(prefers-color-scheme: dark)">
+<!-- Must track --ios-grouped in styles.css: this paints the status bar and the
+     browser chrome, so a stale value here shows as a seam above the page. -->
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Ledger — expense tracker</title>
-<style>
-  :root {
-    --paper: #FAF8F3;
-    --ink: #22271F;
-    --ink-soft: #5B6156;
-    --hairline: #D9D4C4;
-    --accent: #7C8B7A;
-    /* Same sage, darkened to clear 4.5:1 on paper and card. --accent itself
-       is only 3.4:1 there, which is fine behind white text or as a 1px
-       border but fails as a text colour. */
-    --accent-text: #5A6858;
-    --expense: #C0563F;
-    --income: #4C7A5E;
-    --card: #FFFFFF;
-    --shell: #EFECE2;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #1B1D18;
-      --ink: #EDEAE0;
-      --ink-soft: #A8AA9C;
-      --hairline: #454940;
-      --accent: #9BAA98;
-      /* Already 7:1 on this ground, so no darkened variant is needed. */
-      --accent-text: #9BAA98;
-      --expense: #E2795F;
-      --income: #7FB894;
-      /* Lifted well clear of --paper: at #24261F the cards were 1.1:1
-         against the page and the border did all the work of defining them. */
-      --card: #34372D;
-      --shell: #121410;
-    }
-  }
-  * { box-sizing: border-box; }
-  html {
-    -webkit-text-size-adjust: 100%;
-    background: var(--paper);
-  }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -webkit-tap-highlight-color: transparent;
-    overscroll-behavior-y: none;
-  }
-  /* Interactive elements: kill the 350ms double-tap delay, the long-press
-     callout menu, and accidental text selection on rapid taps. */
-  button, select, .tile, .tab-btn, .flip-zone {
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-  }
-  button { color: inherit; }
-  :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
-  }
-  .wrap {
-    max-width: 480px;
-    margin: 0 auto;
-    padding-top: max(24px, env(safe-area-inset-top));
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: calc(48px + env(safe-area-inset-bottom));
-  }
-  /* Stands in for the old page title — this is the app's only header now,
-     so it gets real weight rather than reading as a stray caption. */
-  .greeting {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 400;
-    font-size: 26px;
-    color: var(--ink);
-    margin: 0 0 20px;
-  }
-  /* A set-once preference, so it reads as quiet text — but keeps a full
-     44pt hit area via padding rather than visible bulk. */
-  #currencySelect {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    height: 44px;
-    padding: 0 22px 0 8px;
-    border: none;
-    border-radius: 8px;
-    background-color: transparent;
-    color: var(--ink-soft);
-    font-size: 16px; /* below 16px iOS zooms the page on focus */
-    letter-spacing: 0.04em;
-    font-family: inherit;
-    text-align: right;
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
-                      linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
-    background-position: calc(100% - 12px) 50%, calc(100% - 8px) 50%;
-    background-size: 4px 4px, 4px 4px;
-    background-repeat: no-repeat;
-  }
-
-  /* The card defaults to a calendar (see .cal-* below) and flips to this
-     Net/In/Out summary on tap — see .balance-flip / .flip-zone. */
-  .balance-flip {
-    position: relative;
-    background: var(--card);
-    border: 1px solid var(--hairline);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    overflow: hidden;
-    margin-bottom: 14px;
-    perspective: 1200px;
-  }
-  /* Not a <button>: the summary face holds a real <select>, and nesting
-     interactive controls inside a button is invalid HTML with unreliable
-     focus/click behavior across browsers. role="button" plus the keydown
-     handler in the script restore native-button keyboard behavior. */
-  .flip-zone {
-    position: relative;
-    display: block;
-    width: 100%;
-    cursor: pointer;
-  }
-  .flip-inner {
-    position: relative;
-    transform-style: preserve-3d;
-    transition: transform 0.5s cubic-bezier(0.4, 0.15, 0.15, 1);
-  }
-  .flip-zone.flipped .flip-inner { transform: rotateY(180deg); }
-  /* Front face is normal flow, so its content (a calendar of varying row
-     count) sets the card's height; the back face is an absolute overlay
-     that inherits that same height automatically. */
-  .face {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-  .face.front { pointer-events: auto; }
-  .face.back {
-    position: absolute;
-    inset: 0;
-    transform: rotateY(180deg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 26px 24px;
-    text-align: center;
-    pointer-events: none;
-  }
-  .flip-zone.flipped .face.front { pointer-events: none; }
-  .flip-zone.flipped .face.back { pointer-events: auto; }
-  .flip-hint {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--shell);
-    color: var(--ink-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-  .flip-hint svg { width: 13px; height: 13px; }
-
-  .cal-dow {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    padding: 6px 10px 2px;
-  }
-  .cal-dow span {
-    display: block;
-    text-align: center;
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    opacity: 0.75;
-  }
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    padding: 2px 10px 4px;
-  }
-  .day {
-    position: relative;
-    min-height: 30px;
-    border-radius: 7px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-  }
-  .day .n {
-    font-size: 12px;
-    line-height: 1;
-    color: var(--ink-soft);
-    font-variant-numeric: tabular-nums;
-  }
-  .day .a {
-    font-size: 9.5px;
-    line-height: 1;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-  .day.blank { visibility: hidden; }
-  .day.future .n { opacity: 0.4; }
-  .day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
-  .day.today .n { color: var(--ink); font-weight: 700; }
-  /* Tint intensity is relative to the month's own numbers (see
-     buildCalendarFace's maxExpAmt), not a fixed dollar amount, so this
-     reads sensibly at any currency or income scale. */
-  .day.t1 { background: color-mix(in srgb, var(--expense) 8%, transparent); }
-  .day.t2 { background: color-mix(in srgb, var(--expense) 16%, transparent); }
-  .day.t3 { background: color-mix(in srgb, var(--expense) 26%, transparent); }
-  .day.inc { background: color-mix(in srgb, var(--income) 16%, transparent); }
-  .day.t1 .a, .day.t2 .a, .day.t3 .a { color: var(--expense); }
-  .day.inc .a { color: var(--income); }
-
-  .cal-legend {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 0 10px 6px;
-    font-size: 11px;
-    color: var(--ink-soft);
-  }
-  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
-  .cal-legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-  .cal-legend i.exp { background: var(--expense); }
-  .cal-legend i.inc { background: var(--income); }
-
-  .balance-label {
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin: 0 0 8px;
-  }
-  .balance-amount {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 40px;
-    line-height: 1;
-    margin: 0;
-    font-variant-numeric: tabular-nums;
-  }
-  .balance-amount.negative { color: var(--expense); }
-  .balance-sub {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 14px;
-    font-size: 13px;
-    color: var(--ink-soft);
-  }
-  .balance-sub span.in { color: var(--income); }
-  .balance-sub span.out { color: var(--expense); }
-
-  .section-label {
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin: 0 0 10px 2px;
-  }
-  /* Landing spot for the tab-click scroll (see scrollToTabs) — stopping here
-     rather than at the tab row itself keeps the category tiles in view, so
-     the jump reads as "bring the list closer" rather than "snap to top". */
-  #categorySectionLabel {
-    scroll-margin-top: 74px;
-  }
-
-  /* Ten categories, four columns, three rows — every category on screen with
-     no sideways scroll and no part-empty row.
-
-     Five columns fit the same ten tiles in two rows, but at 390px that left
-     each tile ~64px wide and the grid read as jammed. Four columns give ~80px,
-     which is the roomy feel the old 8-visible layout had, and the third row
-     is filled rather than ragged: Income and Other — the income one and the
-     catch-all — span two columns each as wide tiles. */
-  .tile-grid {
-    display: grid;
-    /* minmax(0, …) not 1fr: a plain 1fr floors each track at the tile's
-       min-content width, and the longer labels are wide enough to push the
-       last column off-screen rather than letting the track shrink. */
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .tile {
-    background: var(--card);
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    min-height: 74px;
-    padding: 10px 3px 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* Safe to centre because .tile-label below reserves the same height in
-       every tile, so all ten content blocks are identical and the icons land
-       on one line anyway. Centring without that reservation lifts the
-       wrapping tile's icon above the row; top-anchoring instead leaves dead
-       space under the short labels. Equal label heights avoids both. */
-    justify-content: center;
-    gap: 5px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: transform 0.12s ease, background 0.12s ease;
-  }
-  .tile:active {
-    transform: scale(0.94);
-    background: var(--hairline);
-  }
-  /* The two catch-all tiles take the last row as a pair, laid out
-     horizontally so they read as a deliberate group rather than as two
-     square tiles stretched to fit. */
-  .tile.wide {
-    grid-column: span 2;
-    flex-direction: row;
-    justify-content: center;
-    min-height: 50px;
-    gap: 10px;
-    padding: 8px 12px;
-  }
-  .tile.wide .tile-label {
-    width: auto;
-    text-align: left;
-    font-size: 13px;
-  }
-  .tile-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    flex-shrink: 0;
-  }
-  .tile-label {
-    /* Floor is 11px: below that these labels stop being comfortably legible
-       on a phone. At four columns every name fits on one line down to a
-       320px viewport, but the soft hyphens defined in the script stay as a
-       safety net — the tile centres one or two lines equally well. */
-    font-size: clamp(11px, 3.2vw, 12.5px);
-    color: var(--ink-soft);
-    text-align: center;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    width: 100%;
-    hyphens: auto;
-    -webkit-hyphens: auto;
-    overflow-wrap: break-word;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  /* Four columns leave every label on one line down to a 320px viewport, so
-     the two-line reservation this used to need at five columns is gone — it
-     only added dead space under the short names. */
-
-  /* Swipe-to-delete: .entry is the clipping track, .entry-content slides over
-     the delete action sitting behind it. */
-  .entry {
-    position: relative;
-    overflow: hidden;
-    background: var(--card); /* backstop: never let anything show through */
-    border-bottom: 1px solid var(--hairline);
-  }
-  .entry:last-child { border-bottom: none; }
-  .entry-content {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 16px;
-    min-height: 60px;
-    background: var(--card);
-    transform: translate3d(0, 0, 0);
-    transition: transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1),
-                background 0.14s ease;
-  }
-  /* Layer promotion only while dragging — a permanent will-change on every
-     row means dozens of compositor layers repainting on every render. */
-  .entry.swiping .entry-content,
-  .entry.open-left .entry-content,
-  .entry.open-right .entry-content { will-change: transform; }
-  .entry.swiping .entry-content { transition: none; }
-  /* Action panels are only painted while a swipe is actually happening.
-     Leaving a full-height red Delete panel permanently rendered under
-     every row means any compositor hiccup on re-render can flash it
-     through — which is exactly what iOS did after saving an edit. */
-  .entry-actions,
-  .entry-actions-left {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 96px;
-    display: flex;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .entry-actions { right: 0; }
-  .entry-actions-left { left: 0; }
-  .entry.swiping .entry-actions,
-  .entry.swiping .entry-actions-left,
-  .entry.open-right .entry-actions,
-  .entry.open-left .entry-actions-left {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .entry-edit {
-    flex: 1;
-    border: none;
-    background: var(--accent);
-    color: #fff;
-    font-size: 15px;
-    font-family: inherit;
-    cursor: pointer;
-  }
-  .entry-edit:active { filter: brightness(0.92); }
-  .entry-delete {
-    flex: 1;
-    border: none;
-    background: var(--expense);
-    color: #fff;
-    font-size: 15px;
-    font-family: inherit;
-    cursor: pointer;
-  }
-  .entry-delete:active { filter: brightness(0.9); }
-  .entry-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .entry-dot {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-  }
-  .entry-text { display: flex; flex-direction: column; min-width: 0; }
-  .entry-desc {
-    font-size: 15px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  /* Clamped like .entry-desc above: a long category name ('Aug 17 ·
-     Utilities') used to wrap and make that one row taller than its
-     neighbours, so row heights rippled with the day of the month. */
-  .entry-meta {
-    font-size: 13px;
-    color: var(--ink-soft);
-    margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .entry-right { display: flex; align-items: center; flex-shrink: 0; }
-  .entry-amount {
-    font-variant-numeric: tabular-nums;
-    font-size: 15px;
-    font-weight: 500;
-  }
-  .entry-amount.expense { color: var(--expense); }
-  .entry-amount.income { color: var(--income); }
-  .show-all-btn {
-    display: block;
-    width: 100%;
-    min-height: 48px;
-    border: none;
-    border-top: 1px solid var(--hairline);
-    background: var(--card);
-    color: var(--accent-text);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .show-all-btn:active { background: var(--hairline); }
-  .swipe-hint {
-    text-align: center;
-    font-size: 12px;
-    color: var(--ink-soft);
-    padding: 10px 4px 2px;
-  }
-
-  .entry-list-card {
-    background: var(--card);
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .tab-row {
-    display: flex;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 10px;
-  }
-  /* The month is now the scope for the whole view, so it stays pinned
-     while you scroll rather than scrolling away above the entries. It reads
-     as the balance card's own header — same surface and border, divided
-     from the calendar/summary below by its own bottom edge — rather than a
-     detached bar, so .balance-flip below drops its top border/radius to
-     keep that seam a single line. */
-  .month-nav {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: var(--card);
-    border: 1px solid var(--hairline);
-    border-radius: 12px 12px 0 0;
-    padding: 6px 16px 6px;
-  }
-  .month-nav-inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .month-label {
-    display: inline-flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 44px;
-    min-width: 0;
-    padding: 0 6px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    /* explicit, or browsers grey the text out when disabled */
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 17px;
-    font-weight: 600;
-    text-align: center;
-    cursor: pointer;
-  }
-  .month-label:disabled { cursor: default; }
-  .today-pill {
-    display: none;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: var(--accent);
-    color: var(--card);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  /* Only offered when it would actually do something. */
-  .month-label.actionable .today-pill { display: inline-block; }
-  .month-label.actionable:active { background: var(--hairline); }
-  .month-arrow {
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink-soft);
-    font-size: 18px;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .month-arrow:active { background: var(--hairline); }
-  .tab-btn {
-    flex: 1;
-    min-height: 44px;
-    padding: 0;
-    background: var(--card);
-    border: none;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-    color: var(--ink-soft);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .tab-btn + .tab-btn { border-left: 1px solid var(--hairline); }
-  /* A view switch, not a primary action. Filling this with --ink gave it the
-     same weight as the 'Add entry' button, and in dark mode that made the
-     selected tab the brightest thing on screen — louder than the balance.
-     Selection now reads from three quieter signals instead: recessed
-     ground, full-strength ink, heavier weight. */
-  .tab-btn.active {
-    background: var(--shell);
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  .cat-row { border-bottom: 1px solid var(--hairline); }
-  .cat-row:last-child { border-bottom: none; }
-  /* The summary line is the disclosure control for the entries beneath it. */
-  .cat-row-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
-    border: none;
-    background: none;
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-  .cat-row-main:active { background: var(--hairline); }
-  .cat-row-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-  .cat-row-body { flex: 1; min-width: 0; }
-  .cat-row-line {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .cat-row-name { font-size: 14px; color: var(--ink); }
-  .cat-row-count { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
-  .cat-row-amount {
-    font-variant-numeric: tabular-nums;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .cat-chevron {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    color: var(--ink-soft);
-    transition: transform 0.18s ease;
-  }
-  .cat-row-main[aria-expanded="true"] .cat-chevron { transform: rotate(90deg); }
-
-  /* Month-over-month change. This is a polarity reading, not a category
-     identity, so it takes the status colours (--expense / --income) rather
-     than any category hue — and it always ships an arrow and a number, so
-     the meaning never rests on colour alone. */
-  .cat-delta {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 3px;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    color: var(--ink-soft);
-  }
-  .cat-delta.worse { color: var(--expense); }
-  .cat-delta.better { color: var(--income); }
-  .cat-delta-arrow { font-size: 11px; line-height: 1; }
-
-  .cat-bar-track {
-    height: 4px;
-    background: var(--hairline);
-    border-radius: 2px;
-    margin-top: 6px;
-    overflow: hidden;
-  }
-  .cat-bar-fill {
-    height: 100%;
-    /* Rounded at the data end only, so the bar reads as a measured length
-       growing from the baseline rather than a floating capsule. */
-    border-radius: 0 2px 2px 0;
-    /* A category worth a rounding error still gets a visible mark instead of
-       disappearing, which would read as 'no spending' rather than 'a little'. */
-    min-width: 3px;
-  }
-
-  /* Disclosure: the individual entries behind a category's total. */
-  .cat-detail { padding: 0 16px 10px 52px; }
-  .cat-detail[hidden] { display: none; }
-  .cat-detail-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    min-height: 36px;
-    padding: 5px 0;
-    border: none;
-    background: none;
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-    border-top: 1px solid var(--hairline);
-  }
-  .cat-detail-row:active { opacity: 0.55; }
-  .cat-detail-desc {
-    flex: 1;
-    min-width: 0;
-    font-size: 13px;
-    color: var(--ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .cat-detail-date { flex-shrink: 0; font-size: 12px; color: var(--ink-soft); }
-  .cat-detail-amount.expense { color: var(--expense); }
-  .cat-detail-amount.income { color: var(--income); }
-  .cat-detail-amount {
-    font-size: 13px;
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-  }
-  .month-arrow[disabled] {
-    opacity: 0.28;
-    cursor: default;
-  }
-  .cat-group-label {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    padding: 14px 16px 8px;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .cat-group-total {
-    font-size: 13px;
-    letter-spacing: 0;
-    font-weight: 600;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
-  }
-  .empty-state {
-    text-align: center;
-    padding: 36px 20px;
-    color: var(--ink-soft);
-    font-size: 14px;
-  }
-
-  .reset-link {
-    display: block;
-    width: 100%;
-    min-height: 44px;
-    text-align: center;
-    margin-top: 28px;
-    font-size: 13px;
-    color: var(--ink-soft);
-    text-decoration: underline;
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-family: inherit;
-  }
-  .backup-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 6px;
-  }
-  .backup-btn {
-    flex: 1;
-    min-height: 44px;
-    padding: 0;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink-soft);
-    font-size: 14px;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .backup-btn:active { background: var(--hairline); }
-  .backup-btn.full { width: 100%; }
-
-  /* No accounts — a self-chosen code is the only key, so restoring after a
-     wipe means either the URL (see setSyncCode's location.hash) or this
-     panel survived, which is why the hint below tells people to bookmark
-     the page rather than just trust local storage. */
-  .sync-block { margin-top: 20px; }
-  .sync-restore-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .sync-restore-row .note-input { flex: 1; }
-  .sync-restore-row .backup-btn {
-    flex: 0 0 auto;
-    padding: 0 16px;
-  }
-  .sync-code-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .sync-code-row code {
-    flex: 1;
-    min-width: 0;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--shell);
-    color: var(--ink);
-    font-size: 14px;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  .sync-code-row .backup-btn {
-    flex: 0 0 auto;
-    padding: 0 16px;
-  }
-  .sync-hint {
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: var(--ink-soft);
-    margin: 10px 0 0;
-  }
-  .sync-status {
-    font-size: 12px;
-    color: var(--ink-soft);
-    text-align: center;
-    margin: 8px 0 0;
-    min-height: 16px;
-  }
-
-  /* Calculator overlay.
-     Presented as a sheet that slides up, the way every native iOS modal
-     does — it used to hard-cut from display:none, which is the single
-     biggest tell that this isn't a native app. Kept out of the layout with
-     visibility rather than display so the transform can animate at all, and
-     the visibility flip is delayed on close until the slide has finished
-     (same technique as .toast below). The paper ground lives on .calc-sheet,
-     not here, so the page stays visible behind the sheet as it travels. */
-  .calc-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    /* Height is driven by JS off visualViewport so the Add button is never
-       trapped under the iOS keyboard. This is the no-JS fallback. */
-    height: 100%;
-    height: 100dvh;
-    z-index: 50;
-    display: flex;
-    flex-direction: column;
-    overscroll-behavior: contain;
-    visibility: hidden;
-    pointer-events: none;
-    transition: visibility 0s linear 0.3s;
-  }
-  .calc-overlay.open {
-    visibility: visible;
-    pointer-events: auto;
-    transition: visibility 0s linear 0s;
-  }
-  .calc-sheet {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--paper);
-    transform: translateY(100%);
-    /* Decelerating curve — the sheet arrives rather than stopping dead. */
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  }
-  .calc-overlay.open .calc-sheet { transform: translateY(0); }
-  /* Top half is locked at exactly 50% of the sheet, not "whatever's left
-     after the bottom claims its share" — the two previously competed via
-     flex-grow/shrink and the split drifted with content. */
-  .calc-top-half {
-    flex: 0 0 50%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .calc-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex: 0 0 auto;
-    padding-top: max(10px, env(safe-area-inset-top));
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-    padding-bottom: 8px;
-  }
-  .calc-cancel {
-    background: none;
-    border: none;
-    color: var(--ink-soft);
-    font-size: 16px;
-    min-height: 44px;
-    padding: 0 4px 0 0;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .calc-cat {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    flex: 0 1 auto;
-    min-height: 44px;
-    font-size: 16px;
-    color: var(--ink-soft);
-  }
-  .calc-cat .tile-icon { width: 24px; height: 24px; }
-  /* A native select is as wide as its longest option ('Transport'), which
-     stranded the caret far from short names like 'Other'. Show a label
-     sized to the actual value and lay the select over it invisibly. */
-  .cat-label {
-    font-size: 16px;
-    color: var(--ink);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    padding-right: 14px;
-    background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
-                      linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
-    background-position: calc(100% - 5px) calc(50% + 1px), calc(100% - 1px) calc(50% + 1px);
-    background-size: 4px 4px, 4px 4px;
-    background-repeat: no-repeat;
-  }
-  #calcCatSelect {
-    position: absolute;
-    inset: -1px;
-    width: auto;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    border: none;
-    opacity: 0;
-    font-size: 16px;
-    background: transparent;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  /* Direction is now implied by category (Income = in, everything else =
-     out), so the toggle's slot goes to the date. */
-  .date-btn {
-    position: relative;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-width: 44px;
-    height: 44px;
-    padding: 0 10px;
-    border: 1px solid var(--hairline);
-    border-radius: 10px;
-    background: var(--card);
-    color: var(--ink-soft);
-    /* The repeat chip beside the date is a real <button>, so these two keep
-       the pair identical rather than letting the button take UA defaults. */
-    font-family: inherit;
-    cursor: pointer;
-  }
-  .date-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
-  .date-btn[hidden] { display: none; }
-  /* A bare icon hides which date is set, which matters when editing an old
-     entry — so the date shows itself whenever it isn't today. */
-  .date-badge {
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--ink);
-    white-space: nowrap;
-  }
-  .date-btn.off-today {
-    border-color: var(--accent-text);
-    color: var(--accent-text);
-  }
-  .date-btn input[type="date"] {
-    position: absolute;
-    inset: -1px;
-    width: auto;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    border: none;
-    opacity: 0;
-    font-size: 16px;
-    background: transparent;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  /* The amount used to absorb all spare height. It only ever holds a short
-     number, so it's sized to content now and the keypad takes the slack. */
-  /* Amount owns the top half, so it's set larger — a small number floating
-     in a tall area reads as a layout bug rather than a design. */
-  .calc-display {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 6px 24px 10px;
-    overflow: hidden;
-  }
-  .amount-sign {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(28px, 9vw, 44px);
-    line-height: 1;
-    color: var(--expense);
-  }
-  .amount-sign.income { color: var(--income); }
-  .calc-display-amount {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(44px, 16vw, 76px);
-    line-height: 1.05;
-    font-variant-numeric: tabular-nums;
-    word-break: break-all;
-    text-align: center;
-    transition: color 0.2s ease;
-  }
-  .calc-memo {
-    display: flex;
-    align-items: center;
-    flex: 0 0 auto;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: 14px;
-  }
-  .calc-memo[hidden] { display: none; }
-
-  .tag-chip.add-tag {
-    min-width: 44px;
-    padding: 0;
-    font-size: 22px;
-    line-height: 1;
-    color: var(--ink-soft);
-    border-style: dashed;
-  }
-  .tag-chip.add-tag.active { background: var(--card); color: var(--ink-soft); }
-  /* Exactly 50%, matching .calc-top-half — tags/keypad/button then split
-     that fixed box between them via their own flex rules. */
-  .calc-bottom {
-    flex: 0 0 50%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  /* One row. Two rows looked broken for categories with only 3-4 tags,
-     which left the second column half-empty and the row ragged. */
-  .calc-tags {
-    display: flex;
-    align-items: center;
-    flex: 0 0 auto;
-    gap: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: 12px;
-  }
-  .calc-tags::-webkit-scrollbar { display: none; }
-  .tag-chip {
-    flex: 0 0 auto;
-    min-height: 44px;
-    padding: 0 16px;
-    border: 1px solid var(--hairline);
-    border-radius: 999px;
-    background: var(--card);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 15px;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .tag-chip.active {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: var(--paper);
-  }
-  .tag-chip:active { transform: scale(0.96); }
-  .note-input {
-    flex: 1 1 auto;
-    min-width: 0;
-    height: 42px;
-    padding: 0 12px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 16px; /* keeps iOS from zooming on focus */
-    text-align: left;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  /* Real date input laid invisibly over the chip: tapping opens the native
-     picker while the chip shows a friendly 'Today' instead of 08/21/2026. */
-  /* Slack is shared, weighted toward the keypad, so a tall phone grows the
-     keys rather than leaving a void under the amount. Capped so keys don't
-     become absurd, and able to shrink on small screens. */
-  .calc-keypad {
-    display: grid;
-    flex: 1 1 auto;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(4, minmax(46px, 1fr));
-    gap: 1px;
-    background: var(--hairline);
-    border-top: 1px solid var(--hairline);
-  }
-  /* Georgia stays on the display amount and the balance, where its old-style
-     figures are the whole character of the thing. It's wrong here though: in
-     Georgia 0/1/2 sit at x-height, 3/4/5/7/9 descend and 6/8 ascend, so a
-     12-key grid of them reads ragged. Georgia has no lining set to switch to,
-     so the keypad alone takes the system face with tabular figures. */
-  .calc-key {
-    background: var(--paper);
-    border: none;
-    min-height: 0;
-    padding: 0;
-    font-size: 25px;
-    color: var(--ink);
-    cursor: pointer;
-    font-family: inherit;
-    font-variant-numeric: tabular-nums lining-nums;
-  }
-  .calc-key:active { background: var(--hairline); }
-  .calc-key.func { font-family: inherit; font-size: 18px; color: var(--ink-soft); }
-  .calc-add-btn {
-    flex-shrink: 0;
-    margin-top: 14px;
-    margin-left: max(20px, env(safe-area-inset-left));
-    margin-right: max(20px, env(safe-area-inset-right));
-    /* clears the home indicator on Face ID iPhones */
-    margin-bottom: calc(16px + env(safe-area-inset-bottom));
-    min-height: 58px;
-    padding: 0;
-    background: var(--ink);
-    color: var(--paper);
-    border: none;
-    border-radius: 12px;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .calc-add-btn:active { opacity: 0.75; }
-
-  /* Safety net for viewports shorter than any currently-supported iPhone
-     (this class was discontinued when iOS 16 dropped support) — keeps the
-     Add button reachable rather than clipped if content briefly exceeds
-     the 50% box, e.g. with the memo row open. */
-  @media (max-height: 600px) {
-    .calc-keypad { grid-template-rows: repeat(4, minmax(38px, 1fr)); }
-    .calc-add-btn { margin-top: 8px; margin-bottom: 10px; min-height: 46px; }
-  }
-
-  /* Landscape phone. The 50/50 split assumes a tall screen: at ~390px of
-     height the bottom half gets ~195px but needs ~270px for tags, keypad and
-     button, which pushed 'Add entry' clean off the bottom of the screen. A
-     short viewport doesn't need half of itself to show one number, so the
-     amount takes only what it needs and the keypad claims the remainder.
-     Sits before the desktop block below so a short desktop window keeps its
-     own sizing. */
-  @media (max-height: 460px) {
-    .calc-top-half { flex: 0 0 auto; }
-    .calc-display { flex: 0 0 auto; min-height: 0; padding: 2px 20px 4px; }
-    .calc-display-amount { font-size: clamp(26px, 9vh, 40px); }
-    .amount-sign { font-size: clamp(18px, 6vh, 28px); }
-    .calc-top { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 4px; }
-    .calc-bottom { flex: 1 1 auto; }
-    .calc-tags { padding-bottom: 8px; }
-    .calc-keypad { grid-template-rows: repeat(4, minmax(32px, 1fr)); }
-    .calc-add-btn {
-      margin-top: 6px;
-      margin-bottom: calc(6px + env(safe-area-inset-bottom));
-      min-height: 40px;
-    }
-    /* The memo row and tag chips together don't fit alongside the keypad
-       here; the chips are the redundant half since the memo field is what
-       the '+' chip opens. */
-    .calc-memo { padding-bottom: 6px; }
-  }
-
-  /* Help overlay. Same slide-up sheet mechanics as the calculator, minus the
-     keyboard-aware resize — there's no text input to defend against.
-     .sheet-overlay / .sheet-panel share every rule here: the repeat editor
-     and the recurring-edit chooser are the same kind of object, and building
-     them on this vocabulary keeps one set of sheet mechanics in the file. */
-  .help-overlay,
-  .sheet-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    height: 100dvh;
-    z-index: 50;
-    display: flex;
-    flex-direction: column;
-    overscroll-behavior: contain;
-    visibility: hidden;
-    pointer-events: none;
-    transition: visibility 0s linear 0.3s;
-  }
-  .help-overlay.open,
-  .sheet-overlay.open {
-    visibility: visible;
-    pointer-events: auto;
-    transition: visibility 0s linear 0s;
-  }
-  .help-sheet,
-  .sheet-panel {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--paper);
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  }
-  .help-overlay.open .help-sheet,
-  .sheet-overlay.open .sheet-panel { transform: translateY(0); }
-
-  /* A short chooser reads better anchored to the bottom edge than stretched
-     to full height, so .anchored lets the panel size to its content. */
-  .sheet-overlay.anchored { justify-content: flex-end; }
-  .sheet-overlay.anchored .sheet-panel {
-    flex: 0 0 auto;
-    max-height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 16px 16px 0 0;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  }
-  .help-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex: 0 0 auto;
-    padding-top: max(14px, env(safe-area-inset-top));
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .help-top h2 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 400;
-    font-size: 20px;
-    margin: 0;
-  }
-  /* The repeat editor's title sits between two controls rather than leading
-     the sheet, so it takes the UI face at the month-label's weight. */
-  .help-top h2.rs-title {
-    font-family: inherit;
-    font-weight: 600;
-    font-size: 17px;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .help-close {
-    flex-shrink: 0;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 4px;
-    margin-right: -4px;
-    border: none;
-    background: none;
-    color: var(--ink-soft);
-    font-size: 16px;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .help-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 4px max(20px, env(safe-area-inset-left)) calc(40px + env(safe-area-inset-bottom));
-  }
-  .help-section { padding: 20px 0; border-bottom: 1px solid var(--hairline); }
-  .help-section:last-child { border-bottom: none; }
-  .help-section h3 {
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent-text);
-    margin: 0 0 10px;
-  }
-  .help-section p {
-    font-size: 14.5px;
-    line-height: 1.6;
-    color: var(--ink);
-    margin: 0 0 10px;
-  }
-  .help-section ol,
-  .help-section ul {
-    margin: 0 0 10px;
-    padding-left: 20px;
-  }
-  .help-section li {
-    font-size: 14.5px;
-    line-height: 1.6;
-    color: var(--ink);
-    margin-bottom: 6px;
-  }
-  .help-section p:last-child,
-  .help-section ol:last-child,
-  .help-section ul:last-child { margin-bottom: 0; }
-
-  /* ---- Repeats -------------------------------------------------------- */
-
-  /* The tab label carries the waiting count, because with nothing posting
-     itself this badge is the only thing that says work is outstanding. */
-  .tab-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-  .tab-count {
-    padding: 2px 7px;
-    border-radius: 999px;
-    background: var(--accent);
-    color: var(--card);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-  }
-  .tab-count[hidden] { display: none; }
-
-  /* A due occurrence carries two separate actions — open the keypad, or
-     confirm as-is — so the row is a plain container holding two sibling
-     buttons rather than a button with a button inside it. */
-  .due-row {
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .due-row:last-child { border-bottom: none; }
-  .due-open {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 11px 8px 11px 16px;
-    min-height: 66px;
-    border: none;
-    background: none;
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-  .due-open:active { background: var(--hairline); }
-  .due-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-  .due-text { display: flex; flex-direction: column; min-width: 0; }
-  .due-desc {
-    font-size: 15px;
-    color: var(--ink);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .due-meta {
-    font-size: 13px;
-    color: var(--ink-soft);
-    margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .due-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  /* Unconfirmed money is deliberately NOT --expense: it hasn't been spent
-     yet, and colouring it like a real outgoing overstates what's happened. */
-  .due-amount {
-    font-variant-numeric: tabular-nums;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--ink);
-  }
-  .due-amount.est { font-weight: 400; color: var(--ink-soft); }
-  /* One tap to confirm a fixed amount. Still an explicit confirmation, just
-     not one that makes you retype a number you already know. */
-  .due-confirm {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border: 1px solid var(--accent);
-    border-radius: 50%;
-    background: var(--card);
-    color: var(--accent-text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .due-confirm:active { background: var(--accent); color: var(--card); }
-  .due-confirm { margin-right: 12px; }
-  .due-chevron { width: 17px; height: 17px; color: var(--ink-soft); margin-right: 14px; flex-shrink: 0; }
-
-  /* A rule in the 'all repeats' list. */
-  .rule-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 16px;
-    min-height: 58px;
-    border: none;
-    border-bottom: 1px solid var(--hairline);
-    background: none;
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-  .rule-row:last-child { border-bottom: none; }
-  .rule-row:active { background: var(--hairline); }
-  .rule-row.paused { opacity: 0.5; }
-  .rule-dot {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-  }
-  .rule-name { font-size: 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
-  .rule-meta { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
-  .rule-amount { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; flex-shrink: 0; }
-  .rule-amount.est { font-weight: 400; color: var(--ink-soft); }
-  .pill {
-    padding: 1px 6px;
-    border-radius: 999px;
-    border: 1px solid var(--hairline);
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-  }
-  /* Marks an entry in the ledger as having come from a repeat, so a figure
-     that appears every month is traceable back to the rule behind it. */
-  .entry-repeat {
-    width: 11px;
-    height: 11px;
-    flex-shrink: 0;
-    color: var(--ink-soft);
-  }
-  .entry-desc-wrap { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
-
-  /* ---- Repeat editor sheet -------------------------------------------- */
-  .rs-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    padding: 0 16px;
-    min-height: 54px;
-    border: none;
-    border-bottom: 1px solid var(--hairline);
-    background: none;
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 15px;
-    text-align: left;
-    cursor: pointer;
-  }
-  .rs-row:last-child { border-bottom: none; }
-  .rs-row:active { background: var(--hairline); }
-  .rs-row.tall { min-height: 60px; padding-top: 9px; padding-bottom: 9px; }
-  .rs-row-label { display: flex; flex-direction: column; min-width: 0; }
-  .rs-row-note { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .rs-value {
-    position: relative;
-    flex-shrink: 0;
-    color: var(--ink-soft);
-    font-size: 15px;
-    padding-right: 14px;
-    background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
-                      linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
-    background-position: calc(100% - 5px) calc(50% + 1px), calc(100% - 1px) calc(50% + 1px);
-    background-size: 4px 4px, 4px 4px;
-    background-repeat: no-repeat;
-  }
-  .rs-value.plain { padding-right: 0; background-image: none; }
-  /* Native controls laid invisibly over their label, the same trick the
-     category picker and date chip already use in the calculator. */
-  .rs-value select,
-  .rs-value input[type="date"] {
-    position: absolute;
-    inset: -8px -4px;
-    width: auto;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    border: none;
-    opacity: 0;
-    font-size: 16px;
-    background: transparent;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .rs-seg {
-    display: flex;
-    flex-shrink: 0;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .rs-seg button {
-    min-height: 36px;
-    padding: 0 14px;
-    border: none;
-    background: var(--card);
-    color: var(--ink-soft);
-    font-family: inherit;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .rs-seg button + button { border-left: 1px solid var(--hairline); }
-  .rs-seg button.on { background: var(--shell); color: var(--ink); font-weight: 600; }
-
-  /* Amount over time: a rate list, drawn as a timeline so 'this figure
-     changes on this date' is readable at a glance. */
-  .rate-row {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .rate-row:last-of-type { border-bottom: none; }
-  /* Negative margin lets the connector run the full height of the row,
-     including its padding, so it meets the next row's dot without a gap. */
-  .rate-spine {
-    flex-shrink: 0;
-    width: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: -12px 0;
-    padding-top: 18px;
-  }
-  .rate-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-  }
-  .rate-dot.future { background: var(--card); border: 1.5px solid var(--accent); }
-  .rate-line { flex: 1; width: 1px; background: var(--hairline); margin-top: 4px; }
-  .rate-body { flex: 1; min-width: 0; }
-  .rate-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .rate-amount { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .rate-when { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
-  .rate-tag {
-    flex-shrink: 0;
-    padding: 2px 7px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .rate-tag.now { background: var(--accent); color: var(--card); }
-  .rate-tag.later { border: 1px solid var(--accent); color: var(--accent-text); }
-
-  /* The rate list is a small editable table rather than a row that opens yet
-     another keypad — two native fields per rate keeps the whole history
-     visible while you change one figure in it. */
-  .rate-amount-input {
-    min-width: 0;
-    flex: 1;
-    height: 38px;
-    padding: 0 10px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 16px;
-    font-variant-numeric: tabular-nums;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .rate-amount-input::-webkit-outer-spin-button,
-  .rate-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .rate-from {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 7px;
-    font-size: 13px;
-    color: var(--ink-soft);
-  }
-  .rate-date {
-    flex: 1;
-    min-width: 0;
-    height: 34px;
-    padding: 0 8px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 15px;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .rate-del {
-    flex-shrink: 0;
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .rate-del:active { color: var(--expense); border-color: var(--expense); }
-
-  .rs-add {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 48px;
-    border: none;
-    border-top: 1px solid var(--hairline);
-    background: var(--card);
-    color: var(--accent-text);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .rs-add:active { background: var(--hairline); }
-  .rs-danger { color: var(--expense); }
-  .rs-note { font-size: 13px; color: var(--ink-soft); margin: 0 2px 22px; line-height: 1.45; }
-  .rs-save {
-    color: var(--accent-text);
-    font-size: 16px;
-    font-weight: 500;
-    min-height: 44px;
-    padding: 0 0 0 4px;
-    margin-left: -4px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .rs-toggle {
-    flex-shrink: 0;
-    width: 44px;
-    height: 26px;
-    padding: 3px;
-    border: none;
-    border-radius: 999px;
-    background: var(--hairline);
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    transition: background 0.16s ease;
-  }
-  .rs-toggle-knob {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--card);
-    transition: transform 0.16s ease;
-  }
-  .rs-toggle.on { background: var(--accent); }
-  .rs-toggle.on .rs-toggle-knob { transform: translateX(18px); }
-
-  /* ---- Recurring-edit chooser ----------------------------------------- */
-  .as-head { text-align: center; padding: 18px 24px 14px; }
-  .as-title { margin: 0; font-size: 16px; font-weight: 600; }
-  .as-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); line-height: 1.4; }
-  .as-group {
-    margin: 0 16px 10px;
-    background: var(--card);
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .as-opt {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    padding: 11px 16px;
-    min-height: 68px;
-    border: none;
-    border-bottom: 1px solid var(--hairline);
-    background: none;
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-  .as-opt:last-child { border-bottom: none; }
-  .as-opt:active { background: var(--hairline); }
-  .as-opt-text { display: flex; flex-direction: column; min-width: 0; }
-  .as-opt-title { font-size: 16px; color: var(--ink); }
-  .as-opt-note { font-size: 13px; color: var(--ink-soft); margin-top: 2px; line-height: 1.35; }
-  .as-opt .as-chevron { width: 16px; height: 16px; color: var(--ink-soft); flex-shrink: 0; }
-  .as-cancel {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: calc(100% - 32px);
-    margin: 0 16px;
-    min-height: 52px;
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    background: var(--card);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .as-cancel:active { background: var(--hairline); }
-
-  /* Undo toast.
-     Dismissal is driven by opacity/visibility, not by transform distance.
-     A pure translate has to travel its own height PLUS the bottom offset,
-     and that offset grows with env(safe-area-inset-bottom) — on a Face ID
-     iPhone the toast never cleared the screen and left a visible sliver. */
-  .toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(20px + env(safe-area-inset-bottom));
-    transform: translate(-50%, 12px);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    z-index: 80;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    max-width: calc(100vw - 32px);
-    padding: 12px 12px 12px 18px;
-    border-radius: 12px;
-    background: var(--ink);
-    color: var(--paper);
-    font-size: 14px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
-    transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
-                opacity 0.2s ease,
-                visibility 0s linear 0.24s;
-  }
-  .toast.show {
-    transform: translate(-50%, 0);
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
-                opacity 0.16s ease,
-                visibility 0s linear 0s;
-  }
-  .toast button {
-    background: none;
-    border: none;
-    color: var(--paper);
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: underline;
-    min-height: 32px;
-    padding: 0 6px;
-    cursor: pointer;
-  }
-
-  /* Hover styles only where a real pointer exists, so iOS doesn't leave
-     buttons stuck in a hover state after being tapped. */
-  @media (hover: hover) and (pointer: fine) {
-    .tile:hover { background: var(--hairline); }
-    .backup-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
-    .month-arrow:hover,
-    .month-arrow[disabled]:hover { background: var(--card); }
-    .month-label.actionable:hover { background: var(--hairline); }
-    .flip-zone:hover .flip-hint { color: var(--ink); }
-    .tab-btn:not(.active):hover { background: var(--hairline); }
-    #resetBtn:hover { color: var(--expense); }
-    .help-link:hover { color: var(--ink); }
-    .calc-cancel:hover { color: var(--ink); }
-    .calc-key:hover { background: var(--hairline); }
-    .calc-add-btn:hover { opacity: 0.88; }
-    .entry:hover .entry-content { background: var(--hairline); }
-
-    /* Mouse users can't swipe, so the delete action fades in on row hover
-       (and on keyboard focus) instead of being dragged out. A permanent
-       right-hand gutter keeps it from ever covering the amount. */
-    .swipe-hint { display: none !important; }
-    /* No swipe on a mouse: delete is a hover action, edit is a row click. */
-    .entry-actions-left { display: none; }
-    .entry-content { padding-right: 92px; cursor: pointer; }
-    .entry-actions {
-      width: 76px;
-      z-index: 2;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.14s ease;
-    }
-    .entry:hover .entry-actions,
-    .entry:focus-within .entry-actions {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .entry-delete { font-size: 14px; }
-    .entry-delete:hover { filter: brightness(1.08); }
-  }
-
-  /* Keyboard users always get a reachable delete button, even without hover. */
-  .entry-delete:focus-visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* ---- Desktop / large viewports ------------------------------------- */
-  @media (min-width: 800px) {
-    body { background: var(--shell); }
-    .wrap {
-      max-width: 560px;
-      min-height: 100vh;
-      background: var(--paper);
-      border-left: 1px solid var(--hairline);
-      border-right: 1px solid var(--hairline);
-      padding: 40px 32px 64px;
-    }
-    .balance-amount { font-size: 46px; }
-    .tile-grid { gap: 12px; }
-    .tile { min-height: 96px; }
-    .tile.wide { min-height: 64px; }
-    .tile-label { font-size: 13px; }
-    .tile.wide .tile-label { font-size: 14px; }
-    .entry-content { min-height: 64px; }
-  }
-
-  /* On a pointer device the full-screen keypad takeover feels wrong;
-     present it as a centered modal over a dimmed page instead. */
-  @media (min-width: 800px) and (hover: hover) and (pointer: fine) {
-    /* A slide up from the bottom of the viewport is a long, odd journey for
-       something that lands in the middle of the screen, so the desktop modal
-       fades and settles in place instead, and the dim fades with it. */
-    .calc-overlay,
-    .help-overlay,
-    .sheet-overlay {
-      opacity: 0;
-      transition: opacity 0.2s ease, visibility 0s linear 0.24s;
-    }
-    .calc-overlay.open,
-    .help-overlay.open,
-    .sheet-overlay.open {
-      opacity: 1;
-      transition: opacity 0.2s ease, visibility 0s linear 0s;
-    }
-    .calc-sheet,
-    .help-sheet,
-    .sheet-panel {
-      transform: translateY(6px) scale(0.985);
-      transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
-    }
-    .calc-overlay.open .calc-sheet,
-    .help-overlay.open .help-sheet,
-    .sheet-overlay.open .sheet-panel { transform: translateY(0) scale(1); }
-
-    .calc-overlay {
-      height: 100%;
-      bottom: 0;
-      background: rgba(20, 22, 18, 0.45);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .calc-sheet {
-      flex: 0 1 auto;
-      width: 100%;
-      max-width: 380px;
-      max-height: 100%;
-      background: var(--paper);
-      border: 1px solid var(--hairline);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
-    }
-    .calc-top-half { flex: 0 0 auto; }
-    .calc-top { padding: 16px 18px 10px; }
-    .calc-display { flex: 0 0 auto; min-height: 0; padding: 12px 24px 8px; }
-    .calc-display-amount { font-size: 40px; }
-    .calc-tags { padding: 0 18px 10px; }
-    .calc-memo { padding: 0 18px 12px; }
-    .calc-bottom { flex: 0 0 auto; }
-    .calc-keypad {
-      flex: 0 0 auto;
-      margin-top: 0;
-      grid-template-rows: repeat(4, 52px);
-      border-radius: 0;
-    }
-    .calc-key { min-height: 52px; font-size: 22px; }
-    .calc-add-btn { margin: 14px 18px 18px; }
-
-    .help-overlay,
-    .sheet-overlay,
-    .sheet-overlay.anchored {
-      height: 100%;
-      bottom: 0;
-      background: rgba(20, 22, 18, 0.45);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .help-sheet,
-    .sheet-panel,
-    .sheet-overlay.anchored .sheet-panel {
-      width: 100%;
-      max-width: 420px;
-      max-height: min(640px, 100%);
-      display: flex;
-      flex-direction: column;
-      background: var(--paper);
-      border: 1px solid var(--hairline);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
-    }
-    .sheet-overlay.anchored .sheet-panel {
-      overflow-y: auto;
-      padding-bottom: 16px;
-    }
-    .help-top { padding: 16px 20px 12px; }
-  }
-</style>
 </head>
 <body>
 <div class="wrap">
@@ -2011,12 +59,31 @@
       <div class="flip-inner">
         <div class="face front" id="calFace"></div>
         <div class="face back">
-          <select id="currencySelect" aria-label="Display currency"></select>
+          <!-- Same idiom as .calc-cat and .date-btn elsewhere in this file: a
+               visible label plus a chevron, with the real <select> laid over it
+               at opacity 0. A native select is as wide as its longest option,
+               which strands the caret; this keeps the control sized to the
+               value while still opening the native picker. -->
+          <div class="currency-picker">
+            <span class="currency-label" id="currencyLabel">USD</span>
+            <svg class="currency-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="8 10 12 6 16 10"></polyline>
+              <polyline points="8 14 12 18 16 14"></polyline>
+            </svg>
+            <select id="currencySelect" aria-label="Display currency"></select>
+          </div>
           <p class="balance-label">Net</p>
           <p class="balance-amount" id="balanceAmount">$0.00</p>
           <div class="balance-sub">
-            <span class="in">In: <span id="totalIn">$0.00</span></span>
-            <span class="out">Out: <span id="totalOut">$0.00</span></span>
+            <div class="balance-stat">
+              <span class="balance-stat-label">In</span>
+              <span class="balance-stat-value in" id="totalIn">$0.00</span>
+            </div>
+            <div class="balance-stat">
+              <span class="balance-stat-label">Out</span>
+              <span class="balance-stat-value out" id="totalOut">$0.00</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2144,6 +211,7 @@
     <p>Tap a category tile to start an entry — pick the amount on the keypad, add a note or tag if you want, then <strong>Add entry</strong>. Net, In, and Out update right away for the month you're viewing.</p>
     <p>Swipe an entry left to delete it, right to edit it (or hover the row if you're on a trackpad or mouse). Switch to <strong>By category</strong> to see totals grouped instead of a flat list.</p>
     <p>Use the arrows, or tap the month name, to move between months — tapping the current month jumps back to today.</p>
+    <p>Tap the calendar to flip it over for the month's <strong>Net</strong>, <strong>In</strong> and <strong>Out</strong>. The currency shown in the corner of that side is a button — tap it to change currency, and every figure in the app follows.</p>
    </div>
 
    <div class="help-section">
@@ -2285,6 +353,17 @@
     { name: 'Income',        color: '#4C7A5E', type: 'income'  }
   ];
 
+  /* Category colour now lives in CSS (--cat-* in styles.css) so it can follow
+     light/dark, and elements opt in with data-cat="<slug>" instead of an inline
+     background. The `color` hex on CATEGORIES is still WRITTEN to every entry
+     and repeat and must stay: exported backups carry it, and a device running
+     an older build may read the same cloud-sync payload. It is simply no
+     longer what paints the chip. Don't "clean it up". */
+  function catSlug(name) {
+    const n = String(name || '').toLowerCase();
+    return CATEGORIES.some(c => c.name.toLowerCase() === n) ? n : 'other';
+  }
+
   /* Plain reading order now that the grid flows left-to-right in rows of
      five (it used to flow column-first, which needed this list transposed).
      Ten categories over two rows: the five most frequent first, then the
@@ -2346,6 +425,7 @@
   const calFaceEl = document.getElementById('calFace');
   const tileGridEl = document.getElementById('tileGrid');
   const currencySelectEl = document.getElementById('currencySelect');
+  const currencyLabelEl = document.getElementById('currencyLabel');
   const resetBtn = document.getElementById('resetBtn');
   const exportBtn = document.getElementById('exportBtn');
   const importBtn = document.getElementById('importBtn');
@@ -2840,6 +920,7 @@
     }
     try { safeStorage.setItem(LOCAL_UPDATED_KEY, data.updatedAt || new Date().toISOString()); } catch (e) {}
     currencySelectEl.value = getCurrency();
+    syncCurrencyLabel();
     render();
   }
 
@@ -2984,10 +1065,23 @@
     if (document.visibilityState === 'visible') reconcileWithCloud(false);
   });
 
+  // Memoized on the currency: constructing an Intl.NumberFormat is expensive
+  // relative to formatting with one, and the balance counter calls this three
+  // times per animation frame. A one-entry cache is enough — the currency is a
+  // set-once preference, so it effectively never misses.
+  let moneyFmt = null;
+  let moneyFmtFor = null;
   function formatMoney(n) {
+    const cur = getCurrency();
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: getCurrency() }).format(n);
+      if (moneyFmtFor !== cur) {
+        moneyFmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: cur });
+        moneyFmtFor = cur;
+      }
+      return moneyFmt.format(n);
     } catch (e) {
+      moneyFmt = null;
+      moneyFmtFor = null;
       return '$' + n.toFixed(2);
     }
   }
@@ -3017,10 +1111,20 @@
       currencySelectEl.appendChild(opt);
     });
     currencySelectEl.value = getCurrency();
+    syncCurrencyLabel();
     currencySelectEl.addEventListener('change', () => {
       setCurrency(currencySelectEl.value);
+      syncCurrencyLabel();
       render();
     });
+  }
+
+  /* The <select> itself is invisible (see .currency-picker), so the label is
+     what the user actually reads — it has to track the value everywhere the
+     value can change, which includes a cloud sync pulling a different
+     currency down from another device. */
+  function syncCurrencyLabel() {
+    currencyLabelEl.textContent = currencySelectEl.value || getCurrency();
   }
 
   /* Explicit break points for labels too long for one tile line at five
@@ -3051,11 +1155,17 @@
       const tile = document.createElement('button');
       tile.type = 'button';
       tile.className = 'tile' + (wide ? ' wide' : '');
+      // data-cat goes on the TILE, not the icon: --cat is an inherited custom
+      // property, so the icon inside still picks it up, and the tile itself can
+      // tint its own surface from it. That tint is what makes the tile visible
+      // at all — a borderless white tile on the grouped page ground is only
+      // 1.12:1, which no eye reads as an edge.
+      tile.dataset.cat = catSlug(cat.name);
       tile.innerHTML = `
-        <span class="tile-icon" style="background:${cat.color}">${iconSvg(cat.name, wide ? 20 : 18)}</span>
+        <span class="tile-icon">${iconSvg(cat.name, wide ? 20 : 18)}</span>
         <span class="tile-label">${wide ? cat.name : (TILE_LABEL_BREAKS[cat.name] || cat.name)}</span>
       `;
-      tile.addEventListener('click', () => openCalculator(cat));
+      tile.addEventListener('click', () => { haptic('tap'); openCalculator(cat); });
       tileGridEl.appendChild(tile);
     });
   }
@@ -3067,7 +1177,7 @@
       btn.type = 'button';
       btn.className = 'calc-key' + (k === '⌫' ? ' func' : '');
       btn.textContent = k;
-      btn.addEventListener('click', () => handleKey(k));
+      btn.addEventListener('click', () => { haptic('tap'); handleKey(k); });
       calcKeypad.appendChild(btn);
     });
   }
@@ -3267,7 +1377,7 @@
   }
 
   function syncCatUI() {
-    calcCatDot.style.background = currentCategory.color;
+    calcCatDot.dataset.cat = catSlug(currentCategory.name);
     calcCatDot.innerHTML = iconSvg(currentCategory.name, 14);
     calcCatSelect.value = currentCategory.name;
     calcCatLabel.textContent = currentCategory.name;
@@ -3300,6 +1410,9 @@
     calcDate.value = todayStr();
     collapseNote();
     updateDateLabel();
+    // Defensive: clears a stranded checkmark/disabled state if the sheet is
+    // ever reopened without having gone through closeCalculator.
+    resetAddBtn();
     syncCatUI();
     syncRepeatChip();
     showSheet();
@@ -3329,6 +1442,9 @@
     // it as the first (active) chip instead. Only the '+' chip opens it.
     collapseNote();
     updateDateLabel();
+    // Defensive: clears a stranded checkmark/disabled state if the sheet is
+    // ever reopened without having gone through closeCalculator.
+    resetAddBtn();
     syncCatUI();
     syncRepeatChip();
     showSheet();
@@ -3343,6 +1459,9 @@
     pendingOcc = null;
     editScope = null;
     rsDraft = null;
+    // AFTER the flags above: addBtnLabel() reads them, so resetting earlier
+    // would restore the label for the mode we just left.
+    resetAddBtn();
     calcDesc.blur();
     unlockBodyScroll();
     /* These two carry the keyboard-aware sizing from syncOverlayViewport.
@@ -3627,9 +1746,127 @@
 
     entries.push(Object.assign({ id: Date.now() }, fields));
     saveEntries(entries);
-    closeCalculator();
-    render();
+    /* This is the only one of the five exits that shows no toast, so it's the
+       only one that needs feedback of its own — the others would double up.
+       disabled is load-bearing: without it a double-tap during the hold files
+       a second entry. */
+    calcAddBtn.disabled = true;
+    calcAddBtn.classList.add('done');
+    calcAddBtn.innerHTML = uiIcon('check', 24);
+    haptic('success');
+    const hold = reduceMotion() ? 0 : 420;
+    calcAddBtn._doneTimer = setTimeout(() => {
+      calcAddBtn._doneTimer = null;
+      closeCalculator();   // this resets the button
+      render();
+    }, hold);
   });
+
+  /* Counts a money figure up to its new value. CSS cannot help here at all —
+     this writes textContent from a rAF loop, which no media query can see, so
+     the reduced-motion check below is mandatory rather than belt-and-braces.
+     Requires tabular figures on the target (see .balance-amount /
+     .balance-sub) or the digits jitter horizontally every frame. */
+  function countTo(el, to) {
+    if (!el) return;
+    const prev = Number(el.dataset.v);
+    if (reduceMotion() || !isFinite(prev)) {
+      el.dataset.v = to;
+      el.textContent = formatMoney(to);
+      return;
+    }
+    // Without this, a fast double-tap on the month arrows leaves two loops
+    // fighting over the same textContent.
+    if (el._raf) cancelAnimationFrame(el._raf);
+    const from = prev;
+    const t0 = performance.now();
+    (function step(now) {
+      const t = Math.min(1, (now - t0) / 500);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = formatMoney(from + (to - from) * eased);
+      if (t < 1) {
+        el._raf = requestAnimationFrame(step);
+      } else {
+        el._raf = null;
+        el.dataset.v = to;
+        el.textContent = formatMoney(to);
+      }
+    })(t0);
+  }
+
+  /* Anything that CSS can't switch off has to consult this directly: the
+     blanket `transition/animation: none` rule in styles.css cannot reach a
+     requestAnimationFrame loop writing textContent, a setTimeout, or
+     navigator.vibrate. Not cached — the user can change the setting while the
+     app is open. */
+  function reduceMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /* NOTE FOR THE NEXT READER: navigator.vibrate is NOT implemented in iOS
+     Safari — it is undefined there, so on this app's primary platform every
+     call below returns early and nothing happens. This is not a bug and not
+     worth debugging. It does work on Android Chrome/Firefox, which is why it's
+     here at all. Vibration also requires a user gesture, which is satisfied:
+     every call site is inside a click or touch handler. */
+  function haptic(kind) {
+    if (reduceMotion()) return;      // CSS cannot disable vibration
+    if (!navigator.vibrate) return;  // iOS Safari always returns here
+    const pattern = { tap: 10, success: [12, 40, 12], warn: [20, 60, 20] }[kind] || 10;
+    try { navigator.vibrate(pattern); } catch (e) {}
+  }
+
+  /* The Add button briefly becomes a checkmark on success. This puts it back,
+     and must run from every path that can leave the sheet — otherwise a
+     mid-flight Cancel or Escape strands the button as a tick. */
+  function resetAddBtn() {
+    if (calcAddBtn._doneTimer) {
+      clearTimeout(calcAddBtn._doneTimer);
+      calcAddBtn._doneTimer = null;
+    }
+    calcAddBtn.classList.remove('done');
+    calcAddBtn.disabled = false;
+    calcAddBtn.textContent = addBtnLabel();
+  }
+
+  /* Single source of the Add button's four labels, so resetAddBtn doesn't have
+     to go through syncCatUI — that dereferences currentCategory, which is null
+     until a tile has been tapped, and re-renders the tag row for nothing. */
+  function addBtnLabel() {
+    return pendingOcc ? 'Confirm entry'
+      : editingId !== null ? 'Save changes'
+      : rsDraft ? 'Save repeat'
+      : 'Add entry';
+  }
+
+  /* render() runs on EVERY mutation — delete, edit, undo, import, cloud
+     reconcile, first paint. Only a deliberate navigation should animate, so
+     the handlers that count as navigation set this and render() consumes it.
+     Without this gate, deleting one row re-animates the whole list and the
+     balance re-counts from zero, which reads as a bug rather than as polish.
+       null | 'next' | 'prev'   (tab switches animate inside activateTab)    */
+  let animateNext = null;
+
+  /* Numbers the rows of whichever list is about to animate. Capped at 8: with
+     ROW_CAP at 150 an uncapped stagger is a 3.3-second cascade. Done here
+     rather than in each render loop so all three lists stagger identically. */
+  function applyStagger(el) {
+    if (!el) return;
+    const rows = el.querySelectorAll('.entry, .cat-row, .due-row, .rule-row');
+    for (let i = 0; i < rows.length; i++) {
+      rows[i].style.setProperty('--i', String(Math.min(i, 8)));
+    }
+  }
+
+  /* Re-adding a class the element already had won't replay its animation, and
+     these containers persist across renders — so the class comes off, layout
+     is flushed, and it goes back on. */
+  function replay(el, cls) {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
 
   /* Also called after saving a new repeat, so the thing you just created is
      on screen rather than filed away behind a tab you haven't opened. */
@@ -3640,6 +1877,15 @@
     repeatListEl.style.display = name === 'repeats' ? 'block' : 'none';
     swipeHintEl.style.display =
       name === 'entries' && entryListEl.querySelector('.entry') ? 'block' : 'none';
+    // display can't be transitioned, and showing two block siblings at once
+    // would stack them and jump the page — so only the incoming panel moves.
+    const shown = name === 'entries' ? entryListEl
+                : name === 'categories' ? categoryListEl : repeatListEl;
+    [entryListEl, categoryListEl, repeatListEl]
+      .forEach(el => el.classList.remove('animate-in'));
+    replay(shown, 'panel-in');
+    applyStagger(shown);
+    shown.classList.add('animate-in');
     closeOpenRow();
   }
   function activeTab() {
@@ -3655,9 +1901,8 @@
     // Lands on the category label rather than the tab row itself, so the
     // tiles stay in view and the jump reads as "bring the list closer"
     // rather than "snap all the way back to the top of the page".
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.getElementById('categorySectionLabel')
-      .scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      .scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
   }
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3746,7 +1991,7 @@
       main.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
       main.innerHTML = `
         <div class="cat-row-left">
-          <span class="entry-dot" style="background:${data.color}">${iconSvg(name, 14)}</span>
+          <span class="entry-dot" data-cat="${catSlug(name)}">${iconSvg(name, 14)}</span>
           <div class="cat-row-body">
             <div class="cat-row-line">
               <span class="cat-row-name">${escapeHtml(name)}</span>
@@ -3756,7 +2001,7 @@
               <span class="cat-row-count">${data.count} ${data.count === 1 ? 'entry' : 'entries'} · ${share}%</span>
               ${deltaHtml(name, data)}
             </div>
-            <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%; background:${data.color}"></div></div>
+            <div class="cat-bar-track"><div class="cat-bar-fill" data-cat="${catSlug(name)}" style="width:${pct}%"></div></div>
           </div>
         </div>
         <svg class="cat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3888,12 +2133,16 @@
       row.classList.remove('swiping');
       if (!horizontal) return;
 
+      // endDrag fires once per gesture (touchend/touchcancel), never per
+      // touchmove, so these are already latched to one buzz per swipe.
       if (dx < -ACTION_W / 2) {
+        haptic('tap');
         content.style.transform = `translate3d(${-ACTION_W}px,0,0)`;
         row.classList.add('open-right');
         row.classList.remove('open-left');
         openRow = row; openSide = 'right';
       } else if (dx > ACTION_W / 2) {
+        haptic('tap');
         content.style.transform = `translate3d(${ACTION_W}px,0,0)`;
         row.classList.add('open-left');
         row.classList.remove('open-right');
@@ -3924,6 +2173,7 @@
     const all = loadEntries();
     const removed = all.find(e => e.id === id);
     if (!removed) return;
+    haptic('warn');
     openRow = null;
     saveEntries(all.filter(e => e.id !== id));
     /* Deleting an entry that came from a repeat has to record the skip too.
@@ -3993,12 +2243,14 @@
 
   monthLabelEl.addEventListener('click', () => {
     if (viewMonth.getTime() === currentMonthStart().getTime()) return;
+    animateNext = viewMonth < currentMonthStart() ? 'next' : 'prev';
     showAllRows = false;
     viewMonth = currentMonthStart();
     updateMonthLabel();
     render();
   });
   monthPrevEl.addEventListener('click', () => {
+    animateNext = 'prev';
     showAllRows = false;
     viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
     updateMonthLabel();
@@ -4006,6 +2258,7 @@
   });
   monthNextEl.addEventListener('click', () => {
     if (viewMonth >= maxViewMonth(loadEntries())) return;
+    animateNext = 'next';
     showAllRows = false;
     viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
     updateMonthLabel();
@@ -4063,7 +2316,7 @@
     open.className = 'due-open';
     open.innerHTML = `
       <span class="due-main">
-        <span class="rule-dot" style="background:${rep.color || '#7C8B7A'}">${iconSvg(rep.category, 12)}</span>
+        <span class="rule-dot" data-cat="${catSlug(rep.category)}">${iconSvg(rep.category, 12)}</span>
         <span class="due-text">
           <span class="due-desc">${escapeHtml(rep.desc || rep.category)}</span>
           <span class="due-meta">${escapeHtml(rep.category)} · due ${formatDate(item.occ)}${varies ? ' · amount varies' : ''}</span>
@@ -4113,7 +2366,7 @@
     row.className = 'rule-row upcoming';
     row.innerHTML = `
       <span class="due-main">
-        <span class="rule-dot" style="background:${rep.color || '#7C8B7A'}">${iconSvg(rep.category, 12)}</span>
+        <span class="rule-dot" data-cat="${catSlug(rep.category)}">${iconSvg(rep.category, 12)}</span>
         <span class="due-text">
           <span class="rule-name">${escapeHtml(rep.desc || rep.category)}</span>
           <span class="rule-meta">${formatDate(item.occ)} · ${escapeHtml(rep.category)}</span>
@@ -4131,7 +2384,7 @@
     row.className = 'rule-row' + (rep.paused ? ' paused' : '');
     row.innerHTML = `
       <span class="due-main">
-        <span class="rule-dot" style="background:${rep.color || '#7C8B7A'}">${iconSvg(rep.category, 12)}</span>
+        <span class="rule-dot" data-cat="${catSlug(rep.category)}">${iconSvg(rep.category, 12)}</span>
         <span class="due-text">
           <span class="rule-name">${escapeHtml(rep.desc || rep.category)}${
             rep.paused ? '<span class="pill">Paused</span>' : ''}</span>
@@ -4576,10 +2829,7 @@
       repeatBtn.classList.remove('off-today');
       repeatBtn.setAttribute('aria-label', 'Repeat: never');
     }
-    calcAddBtn.textContent = pendingOcc ? 'Confirm entry'
-      : editingId !== null ? 'Save changes'
-      : rsDraft ? 'Save repeat'
-      : 'Add entry';
+    calcAddBtn.textContent = addBtnLabel();
   }
 
   repeatBtn.addEventListener('click', () => openRepeatSheet('new', null));
@@ -4694,6 +2944,9 @@
     // it as the first (active) chip instead. Only the '+' chip opens it.
     collapseNote();
     updateDateLabel();
+    // Defensive: clears a stranded checkmark/disabled state if the sheet is
+    // ever reopened without having gone through closeCalculator.
+    resetAddBtn();
     syncCatUI();
     syncRepeatChip();
     showSheet();
@@ -4804,6 +3057,11 @@
   }
 
   function render() {
+    // Read AND clear immediately: every other render() in the app — undo,
+    // import, cloud reconcile, first paint — must see null.
+    const anim = animateNext;
+    animateNext = null;
+
     const entries = loadEntries();
 
     // Deleting the last future-dated entry can leave the view past the cap,
@@ -4829,10 +3087,17 @@
     });
     const net = monthIn - monthOut;
 
-    balanceAmountEl.textContent = formatMoney(net);
+    // Only a deliberate month change counts; every other render() (delete,
+    // undo, import, cloud reconcile, first paint) sets the figure outright.
+    if (anim === 'next' || anim === 'prev') {
+      countTo(balanceAmountEl, net);
+      countTo(totalInEl, monthIn);
+      countTo(totalOutEl, monthOut);
+    } else {
+      [[balanceAmountEl, net], [totalInEl, monthIn], [totalOutEl, monthOut]]
+        .forEach(([el, v]) => { el.dataset.v = v; el.textContent = formatMoney(v); });
+    }
     balanceAmountEl.classList.toggle('negative', net < 0);
-    totalInEl.textContent = formatMoney(monthIn);
-    totalOutEl.textContent = formatMoney(monthOut);
     buildCalendarFace(visible);
 
     if (visible.length === 0) {
@@ -4866,7 +3131,7 @@
         </div>
         <div class="entry-content">
           <div class="entry-left">
-            <span class="entry-dot" style="background:${e.color || '#7C8B7A'}">${iconSvg(e.category, 14)}</span>
+            <span class="entry-dot" data-cat="${catSlug(e.category)}">${iconSvg(e.category, 14)}</span>
             <div class="entry-text">
               <span class="entry-desc-wrap">
                 <span class="entry-desc">${escapeHtml(e.desc || e.category)}</span>
@@ -4907,6 +3172,29 @@
 
     renderCategoryTotals(visible, monthName);
     renderRepeats();
+
+    // Applied last, after every list has its rows, so the stagger runs over
+    // the real DOM. Only a deliberate navigation animates; see animateNext.
+    if (anim === 'next' || anim === 'prev') {
+      const dir = anim === 'next' ? 'm-next' : 'm-prev';
+      [entryListEl, categoryListEl, repeatListEl].forEach(el => {
+        el.classList.remove('m-next', 'm-prev', 'animate-in');
+      });
+      const shown = activeTab() === 'entries' ? entryListEl
+                  : activeTab() === 'categories' ? categoryListEl : repeatListEl;
+      replay(shown, dir);
+      applyStagger(shown);
+      shown.classList.add('animate-in');
+      // opacity only — .balance-flip is the perspective ancestor of the flip
+      // card's backface-visibility subtree, and transforming it makes iOS
+      // Safari leak the back face through the front.
+      replay(document.querySelector('.balance-flip'), 'm-fade');
+      replay(monthLabelTextEl, dir);
+    } else {
+      [entryListEl, categoryListEl, repeatListEl].forEach(el => {
+        el.classList.remove('animate-in', 'm-next', 'm-prev');
+      });
+    }
   }
 
   resetBtn.addEventListener('click', () => {
@@ -4964,6 +3252,7 @@
         saveRepeats(repeats);
         if (data.currency) setCurrency(data.currency);
         currencySelectEl.value = getCurrency();
+        syncCurrencyLabel();
         render();
         showToast(`Restored ${entries.length} entries`);
       } catch (e) {

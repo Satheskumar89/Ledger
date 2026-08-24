@@ -1,0 +1,2666 @@
+  /* ==========================================================================
+     DESIGN TOKENS
+
+     Three layers, in dependency order:
+
+       1. --ios-*    Apple system primitives. NOT consumed by components —
+                     they exist so the semantic layer below has something
+                     authoritative to point at.
+       2. semantic   --paper / --ink / --accent / ... — the ~1,900 var()
+                     references throughout this file all read these.
+       3. scales     spacing, type, tracking, radius, shadow, motion.
+
+     ADOPTION RULE: a raw px value stays raw until the rule it lives in is
+     being edited for another reason. Do NOT run a mechanical find/replace of
+     `8px` -> `var(--sp-4)` — this file uses 8px as a radius, a gap and a
+     padding, and a blind sweep would permanently entangle three unrelated
+     scales. Convert opportunistically, per component.
+
+     NEVER tokenize: every clamp(), every env(safe-area-inset-*), 100dvh, the
+     calendar's 1px grid gaps, perspective: 1200px, and the calc sheet's
+     flex: 0 0 50% split. Those are load-bearing math, not design values.
+     ========================================================================== */
+  :root {
+    /* ---- Layer 1: iOS system primitives ------------------------------- */
+    /* Backgrounds */
+    --ios-bg: #FFFFFF;
+    --ios-bg-2: #F2F2F7;
+    --ios-bg-3: #FFFFFF;
+    --ios-grouped: #F2F2F7;
+    --ios-grouped-2: #FFFFFF;
+    --ios-grouped-3: #F2F2F7;
+    /* Labels. --ios-label-2 is #6D6D72 (5.17:1 on white), deliberately NOT
+       Apple's flattened #8A8A8E (3.0:1): --ink-soft carries a lot of 12-13px
+       prose in this app (.entry-meta, .cat-row-count, .sync-hint, .rate-when,
+       .as-opt-note) and is ~6.4:1 today. Dropping to Apple's literal value is
+       a real legibility regression on a money app. Apple's value is available
+       as --ios-label-3 for genuinely decorative chrome. */
+    --ios-label: #000000;
+    --ios-label-2: #6D6D72;
+    --ios-label-3: #A0A0A6;
+    --ios-label-4: #C5C5C7;
+    --ios-label-inverse: #FFFFFF;
+    /* Separators */
+    --ios-sep: rgba(60, 60, 67, 0.29);
+    --ios-sep-opaque: #C6C6C8;
+    /* Fills */
+    --ios-fill-1: rgba(120, 120, 128, 0.20);
+    --ios-fill-2: rgba(120, 120, 128, 0.16);
+    --ios-fill-3: rgba(118, 118, 128, 0.12);
+    --ios-fill-4: rgba(116, 116, 128, 0.08);
+    /* Tints. The *-t variants are text-safe: systemRed on white is 3.55:1 and
+       systemGreen is 2.22:1, both failing 4.5:1 — and in this app --expense /
+       --income are predominantly TEXT colours (.entry-amount, .balance-amount,
+       .cat-delta, .day .a). Same fill/text split this file already uses for
+       --accent / --accent-text. Light systemBlue is 4.02:1, hence #0066CC
+       (5.56:1) rather than Apple's increased-contrast #0040DD, which reads
+       indigo. Dark needs no split — see the dark block below. */
+    --ios-blue: #007AFF;
+    --ios-blue-t: #0066CC;
+    --ios-red: #FF3B30;
+    --ios-red-t: #D70015;
+    --ios-green: #34C759;
+    --ios-green-t: #1E7A32;
+    --ios-gray: #8E8E93;
+    --ios-gray-4: #D1D1D6;
+    --ios-gray-5: #E5E5EA;
+    --ios-gray-6: #F2F2F7;
+    --ios-switch-off: #E9E9EA;
+
+    /* ---- Layer 2: semantic colour -------------------------------------
+       These ten names are what the rest of the file references. They now
+       resolve through Layer 1, which means they need NO dark-mode block of
+       their own — the primitives they point at are what get redefined under
+       prefers-color-scheme. Don't reintroduce dark overrides here. */
+    --paper: var(--ios-grouped);
+    --ink: var(--ios-label);
+    --ink-soft: var(--ios-label-2);
+    --hairline: var(--ios-sep-opaque);
+    --accent: var(--ios-blue);
+    /* The tint darkened to clear 4.5:1 as text. --accent itself is 4.02:1 on
+       white, which is fine behind white text or as a 1px border but marginal
+       as a text colour. (Same split as before, new hues.) */
+    --accent-text: var(--ios-blue-t);
+    /* TEXT-safe by default: these two are read as text far more often than as
+       fill in this file. Use --expense-fill / --income-fill for fills. */
+    --expense: var(--ios-red-t);
+    --income: var(--ios-green-t);
+    --card: var(--ios-grouped-2);
+    --shell: var(--ios-fill-3);
+
+    /* ---- Layer 2b: roles that didn't exist before ---------------------
+       These split three tokens that were each doing several jobs:
+
+       --hairline had THREE  — separator, press/hover fill, and grey track.
+       --paper    had FOUR   — page ground, inverted foreground, sheet
+                               ground, and keypad key cap.
+       --ink      had THREE  — label, filled-button ground, toast ground.
+
+       Under iOS those are all different colours, so the jobs get their own
+       names. Nothing references these yet; components adopt them per
+       component. */
+    --label-tertiary: var(--ios-label-3);  /* decorative chrome only */
+    --fill-press: var(--ios-fill-4);       /* :active / :hover cell highlight */
+    --fill-track: var(--ios-fill-3);       /* bar tracks, switch-off, chips */
+    --expense-fill: var(--ios-red);        /* --expense as a FILL, not text */
+    --income-fill: var(--ios-green);       /* --income as a FILL, not text */
+    /* White on --accent measures 4.02:1 light / 3.65:1 dark, i.e. below the
+       4.5:1 AA floor for 17px text. This is Apple's own systemBlue-with-white
+       button and is kept for authenticity; if AA on the Add button matters
+       more than matching iOS, darken --accent for FILLS only (#0060DF gives
+       5.1:1) and leave --accent-text alone. */
+    --on-accent: #FFFFFF;                  /* text/glyph on any tint fill */
+    --on-ink: var(--ios-label-inverse);
+    --sheet-bg: var(--ios-bg-2);           /* elevated sheet ground */
+    --key-bg: var(--ios-bg);               /* keypad key cap */
+    --segment-track: var(--ios-fill-3);
+    --segment-thumb: var(--ios-bg);
+    --switch-off: var(--ios-switch-off);
+    --toast-bg: rgba(28, 28, 30, 0.94);    /* dark in BOTH themes, like an
+                                              iOS HUD — an inverted white
+                                              toast reads wrong in dark */
+    --toast-fg: #FFFFFF;
+    --overlay-dim: rgba(0, 0, 0, 0.40);
+    --grabber: rgba(60, 60, 67, 0.30);
+    /* Tiles share the list cards' ground, then get separated from the page the
+       way iOS itself does it — and that differs by theme, deliberately:
+
+         light: by ELEVATION. The page is near-white and the card is white, so
+                there is nowhere lighter to go and a fill cannot make an edge
+                (borderless white on the grouped ground is 1.12:1). A soft
+                shadow can, which is what Home.app and Reminders do.
+         dark:  by FILL. Shadows don't read on black, but a category tint over
+                #1C1C1E clears 1.5-2:1 against the page on its own.
+
+       Both themes carry some tint so a tile reads as belonging to its
+       category; light just leans on the shadow for the edge. */
+    --tile-bg: var(--card);
+    /* Kept low on purpose. At 10%+ the muted hues turn muddy — Utilities went
+       beige, Other went plain grey — and ten pastel blocks fight the icon
+       chips, which are the actual category signal. This is a hint. */
+    --tile-tint: 5%;
+    --tile-tint-active: 14%;
+    --tile-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+    --page-surround: var(--ios-gray-4);    /* desktop frame only */
+    --cat-fg: #FFFFFF;                     /* glyph on a category fill */
+    /* Calendar heatmap tint strengths. Tokenized rather than media-queried:
+       dark grounds need more tint than light ones, and adding a media query
+       near the .day rules would fight this file's existing, order-sensitive
+       media-query stack. */
+    --tint-1: 10%;
+    --tint-2: 20%;
+    --tint-3: 32%;
+    /* Separator insets. iOS separators start at the TEXT, not the cell edge.
+       52px = 16 padding + 26 dot + 10 gap, which is already what
+       .cat-detail's padding-left uses. */
+    --sep-inset-icon: 52px;
+    --sep-inset-text: 16px;
+
+    /* ---- Layer 2c: category identity ----------------------------------
+       Ten hues, drawn from the iOS system families, with a light/dark pair
+       each. The glyph inside is stroke="currentColor" over --cat-fg (white),
+       so these are FILLS that have to carry a white glyph — which is why they
+       are not simply Apple's light/dark pairs:
+
+         light = Apple's increased-contrast variants (white glyph 4.4-8:1)
+         dark  = Apple's STANDARD light variants, one step lighter so the chip
+                 doesn't vanish into #1C1C1E. White then lands at ~2.2-3.5:1,
+                 which is exactly what iOS Settings.app itself ships (its grey
+                 "General" chip is 2.6:1) and is acceptable only because the
+                 glyph is redundant to the label right beside it.
+
+       Using Apple's *dark* variants as fills would be wrong: they're tuned for
+       tint-on-dark-ground (i.e. as text), and white on #30D158 is 2.2:1.
+
+       Two deliberate substitutions:
+         - Utilities avoids systemYellow entirely. White on #FFCC00 is ~1.3:1,
+           genuinely unreadable. systemBrown matches the old #8B6C4C anyway.
+         - Grocery moves off green to systemMint, so green is free for Income.
+           Money means green; two greens in a ten-swatch set was a collision
+           the previous palette already had. */
+    --cat-grocery:   #0C817B;   /* mint   */
+    --cat-dining:    #C93400;   /* orange */
+    --cat-health:    #D30F45;   /* pink   */
+    --cat-transport: #0040DD;   /* blue   */
+    --cat-utilities: #7F6545;   /* brown  */
+    --cat-shopping:  #8944AB;   /* purple */
+    --cat-education: #3634A3;   /* indigo */
+    --cat-leisure:   #008299;   /* teal   */
+    --cat-other:     #6C6C70;   /* gray   */
+    /* Intentionally NOT --income-fill: this one is an icon-chip fill that must
+       carry a white glyph, that one is a status colour for text and tints.
+       Same fill/text split as --accent vs --accent-text. */
+    --cat-income:    #248A3D;   /* green  */
+
+    /* ---- Layer 3: type ------------------------------------------------
+       No web fonts: there's no build step, the app is offline-first, and a
+       webfont round trip would be a worse regression than any typeface gain.
+       -apple-system resolves to SF on Apple platforms, Segoe UI Variable on
+       Windows, Roboto on Android — each platform's own UI face, which is the
+       correct reading of "native" off-Apple. */
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+               "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-num: var(--font-ui);
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+    /* iOS text styles */
+    --fs-caption2: 11px;
+    --fs-caption1: 12px;
+    --fs-footnote: 13px;
+    --fs-subhead: 15px;
+    --fs-callout: 16px;
+    --fs-body: 17px;
+    --fs-title3: 20px;
+    --fs-title2: 22px;
+    --fs-title1: 28px;
+    --fs-large: 34px;
+    --lh-body: 1.29;
+    --lh-prose: 1.45;
+
+    /* Apple's published SF optical tracking. UIKit applies this per text
+       style automatically; CSS does NOT. SF at 34px with default tracking
+       looks loose and un-iOS, so these have to be applied by hand — it's the
+       highest-leverage typographic change available, and invisible if
+       skipped, which is exactly why it's easy to skip. */
+    --tr-11: 0.07px;
+    --tr-12: 0px;
+    --tr-13: -0.08px;
+    --tr-15: -0.24px;
+    --tr-16: -0.32px;
+    --tr-17: -0.41px;
+    --tr-20: -0.45px;
+    --tr-22: -0.26px;
+    --tr-28: 0.36px;
+    --tr-34: 0.37px;
+
+    /* ---- Layer 3: spacing (iOS 4pt grid + the 6/10 half-steps in use) -- */
+    --sp-1: 2px;  --sp-2: 4px;  --sp-3: 6px;   --sp-4: 8px;
+    --sp-5: 10px; --sp-6: 12px; --sp-7: 16px;  --sp-8: 20px;
+    --sp-9: 24px; --sp-10: 32px; --sp-11: 40px;
+
+    /* ---- Layer 3: radius ---------------------------------------------- */
+    --r-list: 10px;     /* inset-grouped list container */
+    --r-card: 12px;     /* tiles, action-sheet cards */
+    --r-control: 8px;   /* fields, small controls, day cells */
+    --r-button: 12px;   /* prominent filled button */
+    --r-sheet: 12px;    /* sheet top corners */
+    --r-seg: 9px;
+    --r-seg-thumb: 7px;
+    --r-key: 5px;       /* keyboard key cap */
+    --r-pill: 999px;
+
+    /* ---- Layer 3: shadow (iOS uses almost none) ----------------------- */
+    --sh-thumb: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+    --sh-knob: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+    --sh-key: 0 1px 0 rgba(0, 0, 0, 0.10);
+    --sh-toast: 0 8px 24px rgba(0, 0, 0, 0.18);
+    --sh-modal: 0 24px 60px rgba(0, 0, 0, 0.28);
+
+    /* ---- Layer 3: motion ---------------------------------------------- */
+    --ease-standard: cubic-bezier(0.42, 0, 0.58, 1);    /* UIView easeInOut */
+    --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);       /* already used below */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);          /* expo-out, entrances */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);   /* back-out, releases */
+    --dur-instant: 0.06s;
+    --dur-fast: 0.12s;
+    --dur: 0.2s;
+    --dur-slow: 0.3s;
+    --dur-entrance: 0.4s;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* ---- Layer 1: iOS system primitives, dark ----------------------- */
+      --ios-bg: #000000;
+      --ios-bg-2: #1C1C1E;
+      --ios-bg-3: #2C2C2E;
+      /* #1C1C1E cells on #000 is 1.23:1 — lower than the 1.1:1 the --card
+         comment below calls a failure. It works on iOS because grouped cards
+         are large filled blocks with internal separators, not because of
+         contrast math. If it reads flat on real hardware, the escape hatch is
+         a two-value edit to iOS's *elevated* set: --ios-grouped: #1C1C1E and
+         --ios-grouped-2: #2C2C2E (1.6:1). The tile grid, which is where
+         flatness bites hardest, already solves this on its own — see
+         --tile-tint. */
+      --ios-grouped: #000000;
+      --ios-grouped-2: #1C1C1E;
+      --ios-grouped-3: #2C2C2E;
+      --ios-label: #FFFFFF;
+      --ios-label-2: #98989E;
+      --ios-label-3: #6B6B70;
+      --ios-label-4: #48484A;
+      --ios-label-inverse: #FFFFFF;
+      --ios-sep: rgba(84, 84, 88, 0.60);
+      --ios-sep-opaque: #38383A;
+      --ios-fill-1: rgba(120, 120, 128, 0.36);
+      --ios-fill-2: rgba(120, 120, 128, 0.32);
+      --ios-fill-3: rgba(118, 118, 128, 0.24);
+      --ios-fill-4: rgba(118, 118, 128, 0.18);
+      /* Dark systemRed on #1C1C1E is 5.12:1 and dark systemGreen is 8.6:1 —
+         both pass, so the fill value doubles as the text value and the *-t
+         split collapses. Same reasoning as the --accent-text note below. */
+      --ios-blue: #0A84FF;
+      --ios-blue-t: #0A84FF;
+      --ios-red: #FF453A;
+      --ios-red-t: #FF453A;
+      --ios-green: #30D158;
+      --ios-green-t: #30D158;
+      --ios-gray: #8E8E93;
+      --ios-gray-4: #3A3A3C;
+      --ios-gray-5: #2C2C2E;
+      --ios-gray-6: #1C1C1E;
+      --ios-switch-off: #39393D;
+
+      /* Layer 2 needs nothing here — the ten semantic names resolve through
+         the Layer 1 primitives above, which this block already redefines. */
+
+      /* ---- Layer 2b: the few roles that don't just follow a primitive -- */
+      --segment-thumb: #636366;
+      --toast-bg: rgba(58, 58, 60, 0.96);
+      --overlay-dim: rgba(0, 0, 0, 0.48);
+      --grabber: rgba(235, 235, 245, 0.30);
+      --page-surround: #000000;
+      /* Dark keeps --tile-bg on --card so the tiles match the list cards.
+         24% read as solid coloured slabs — far too heavy — so the tint drops to
+         a hint here too, and the edge comes from a faint inset hairline
+         instead. A drop shadow can't do that job against #000. */
+      --tile-tint: 10%;
+      --tile-tint-active: 20%;
+      --tile-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      /* Dark grounds need more tint to read at all. */
+      --tint-1: 14%;
+      --tint-2: 26%;
+      --tint-3: 40%;
+
+      /* See the light block: these are Apple's STANDARD light variants, not
+         the dark ones, because they carry a white glyph. */
+      --cat-grocery:   #00C7BE;
+      --cat-dining:    #FF9500;
+      --cat-health:    #FF2D55;
+      --cat-transport: #007AFF;
+      --cat-utilities: #A2845E;
+      --cat-shopping:  #AF52DE;
+      --cat-education: #5856D6;
+      --cat-leisure:   #30B0C7;
+      --cat-other:     #8E8E93;
+      --cat-income:    #34C759;
+    }
+  }
+  * { box-sizing: border-box; }
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: var(--paper);
+  }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  /* Interactive elements: kill the 350ms double-tap delay, the long-press
+     callout menu, and accidental text selection on rapid taps. */
+  button, select, .tile, .tab-btn, .flip-zone {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  button { color: inherit; }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  /* ---- Motion ---------------------------------------------------------
+     List rows deliberately get a background highlight and NEVER a scale:
+     .entry-content carries attachSwipe's inline translate3d and lives inside
+     an overflow:hidden track, so scaling it is a compositing hazard. */
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateY(6px); }
+  }
+  /* Staggered entrance. --i is capped in JS at 8 steps: with a 150-row cap an
+     uncapped stagger is a 3.3-second cascade. Applied to .entry rather than
+     .entry-content for the translate3d reason above, and with no will-change
+     because there can be dozens of these on screen. */
+  .animate-in .entry,
+  .animate-in .cat-row,
+  .animate-in .due-row,
+  .animate-in .rule-row {
+    animation: rowIn 0.32s var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 22ms);
+  }
+  @keyframes slideNext { from { opacity: 0; transform: translateX(12px); } }
+  @keyframes slidePrev { from { opacity: 0; transform: translateX(-12px); } }
+  @keyframes fadeIn    { from { opacity: 0; } }
+  @keyframes panelIn   { from { opacity: 0; transform: translateY(4px); } }
+  .m-next { animation: slideNext var(--dur-slow) var(--ease-out) both; }
+  .m-prev { animation: slidePrev var(--dur-slow) var(--ease-out) both; }
+  /* .balance-flip gets opacity ONLY. It holds perspective: 1200px over a
+     backface-visibility: hidden subtree, and animating a transform on the
+     perspective ancestor is exactly what makes iOS Safari leak the flip card's
+     back face through the front. Never transform this element. */
+  .m-fade { animation: fadeIn var(--dur-slow) var(--ease-out) both; }
+  .panel-in { animation: panelIn 0.24s var(--ease-out) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    /* The blanket rule above kills the transition but leaves the :active end
+       state snapping on and off, which is still movement. */
+    .tile:active,
+    .tag-chip:active,
+    .calc-add-btn:active { transform: none !important; }
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+  /* Stands in for the old page title — this is the app's only header now,
+     so it gets real weight rather than reading as a stray caption. */
+  .greeting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* iOS largeTitle. The tracking is not optional: UIKit applies SF's optical
+       tracking per text style, CSS does not, and SF at 34px with browser
+       default tracking reads loose and un-native. */
+    font-size: var(--fs-large);
+    font-weight: 700;
+    line-height: 41px;
+    letter-spacing: var(--tr-34);
+    color: var(--ink);
+    margin: 0 0 20px;
+  }
+  /* A set-once preference, so it reads as quiet text — but keeps a full
+     44pt hit area via padding rather than visible bulk. */
+  /* Sits where an iOS nav bar puts a trailing control, rather than floating in
+     the top-left corner attached to nothing. A picker is a TINTED control in
+     iOS, not grey text — the old grey-with-a-hand-drawn-caret treatment was
+     from the paper palette. */
+  .currency-picker {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    /* Full 44pt hit area without visible bulk. */
+    min-height: 44px;
+    padding: 0 4px;
+    color: var(--accent-text);
+  }
+  .currency-label {
+    font-size: var(--fs-subhead);
+    font-weight: 600;
+    letter-spacing: var(--tr-15);
+    font-variant-numeric: tabular-nums;
+  }
+  /* chevron.up.chevron.down — the glyph iOS uses on a compact menu button. */
+  .currency-chevron {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+  }
+  /* The real control, laid invisibly over the label above. */
+  #currencySelect {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    font-size: 16px; /* below 16px iOS zooms the page on focus */
+    font-family: inherit;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* The card defaults to a calendar (see .cal-* below) and flips to this
+     Net/In/Out summary on tap — see .balance-flip / .flip-zone. */
+  .balance-flip {
+    position: relative;
+    background: var(--card);
+    /* Shares a seam with .month-nav above, which supplies the top corners and
+       the dividing line. These two radii must stay equal to --r-list or the
+       corners mismatch by a couple of px and read as a rendering bug. */
+    border-radius: 0 0 var(--r-list) var(--r-list);
+    overflow: hidden;
+    margin-bottom: 14px;
+    perspective: 1200px;
+  }
+  /* Not a <button>: the summary face holds a real <select>, and nesting
+     interactive controls inside a button is invalid HTML with unreliable
+     focus/click behavior across browsers. role="button" plus the keydown
+     handler in the script restore native-button keyboard behavior. */
+  .flip-zone {
+    position: relative;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+  }
+  .flip-inner {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0.15, 0.15, 1);
+  }
+  .flip-zone.flipped .flip-inner { transform: rotateY(180deg); }
+  /* Front face is normal flow, so its content (a calendar of varying row
+     count) sets the card's height; the back face is an absolute overlay
+     that inherits that same height automatically. */
+  .face {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .face.front { pointer-events: auto; }
+  .face.back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* HEIGHT BUDGET: this face is position:absolute inset:0, so it inherits its
+       height from the calendar on the front and .balance-flip's overflow:hidden
+       clips anything taller. A 4-row month is the shallowest front face there
+       is — Feb 2026 is the only one this decade, and it is reachable from
+       today — giving about 168px. Contents here come to ~152px, or ~158px on
+       desktop where .balance-amount grows to 46px. At the old 26px padding the
+       desktop case clipped by 6px. Re-run the sum before adding a line. */
+    padding: 18px 24px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .flip-zone.flipped .face.front { pointer-events: none; }
+  .flip-zone.flipped .face.back { pointer-events: auto; }
+  .flip-hint {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--fill-track);
+    color: var(--label-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .flip-hint svg { width: 13px; height: 13px; }
+
+  .cal-dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 6px 10px 2px;
+  }
+  .cal-dow span {
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    opacity: 0.75;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    padding: 2px 10px 4px;
+  }
+  .day {
+    position: relative;
+    min-height: 30px;
+    border-radius: 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+  }
+  .day .n {
+    font-size: var(--fs-subhead);
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .day .a {
+    font-size: 9.5px;
+    line-height: 1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .day.blank { visibility: hidden; }
+  .day.future .n { opacity: 0.4; }
+  /* MUST stay a box-shadow. This rule is declared BEFORE .day.t1/.t2/.t3
+     below, so a `background` here would lose to the tier tint on any day that
+     has spending — including today — and fixing that would need .day.today.t1
+     x4 or !important. An inset ring composites cleanly over any tier. */
+  .day.today { box-shadow: inset 0 0 0 2px var(--accent); }
+  .day.today .n { color: var(--ink); font-weight: 700; }
+  /* Tint intensity is relative to the month's own numbers (see
+     buildCalendarFace's maxExpAmt), not a fixed dollar amount, so this
+     reads sensibly at any currency or income scale. */
+  .day.t1 { background: color-mix(in srgb, var(--expense-fill) var(--tint-1), transparent); }
+  .day.t2 { background: color-mix(in srgb, var(--expense-fill) var(--tint-2), transparent); }
+  .day.t3 { background: color-mix(in srgb, var(--expense-fill) var(--tint-3), transparent); }
+  .day.inc { background: color-mix(in srgb, var(--income-fill) var(--tint-2), transparent); }
+  .day.t1 .a, .day.t2 .a, .day.t3 .a { color: var(--expense); }
+  .day.inc .a { color: var(--income); }
+
+  .cal-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 10px 6px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cal-legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .cal-legend i.exp { background: var(--expense-fill); }
+  .cal-legend i.inc { background: var(--income-fill); }
+
+  /* iOS section headers are sentence case at 13px, not tracked-out caps —
+     the uppercase + 0.1em pattern was the strongest non-iOS signal left once
+     the palette changed. Same for .section-label / .cat-group-label /
+     .help-section h3 below. .cal-dow span deliberately keeps its caps:
+     iOS Calendar does track its day-of-week letters. */
+  .balance-label {
+    font-size: var(--fs-footnote);
+    letter-spacing: var(--tr-13);
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+  .balance-amount {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: var(--tr-34);
+    line-height: 1;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    /* .face.back is a centred flex column, so a bare inline-level amount
+       re-centres itself every time the string length changes — which the
+       counting animation does ~30 times a second. Own the full width and
+       centre the text instead, so only the glyphs change. */
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+  .balance-amount.negative { color: var(--expense); }
+  /* Two stat columns split by a hairline — the iOS Health/Wallet summary form.
+     Replaces "In: $x  Out: $y", where the colon labels made the figures read
+     as a sentence rather than as data. */
+  .balance-sub {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  .balance-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 104px;
+    padding: 0 14px;
+  }
+  .balance-stat + .balance-stat { border-left: 1px solid var(--hairline); }
+  .balance-stat-label {
+    font-size: var(--fs-caption1);
+    color: var(--label-tertiary);
+  }
+  .balance-stat-value {
+    font-size: var(--fs-body);
+    font-weight: 500;
+    letter-spacing: var(--tr-17);
+    /* Mandatory, not cosmetic: these figures get counted up by rAF, and without
+       tabular figures the digits jitter horizontally every frame. */
+    font-variant-numeric: tabular-nums;
+  }
+  .balance-stat-value.in { color: var(--income); }
+  .balance-stat-value.out { color: var(--expense); }
+
+  .section-label {
+    font-size: var(--fs-footnote);
+    letter-spacing: var(--tr-13);
+    color: var(--ink-soft);
+    /* iOS insets a section header to the cell's text edge. */
+    margin: 0 0 7px 16px;
+  }
+  /* Landing spot for the tab-click scroll (see scrollToTabs) — stopping here
+     rather than at the tab row itself keeps the category tiles in view, so
+     the jump reads as "bring the list closer" rather than "snap to top". */
+  #categorySectionLabel {
+    scroll-margin-top: 74px;
+  }
+
+  /* Ten categories, four columns, three rows — every category on screen with
+     no sideways scroll and no part-empty row.
+
+     Five columns fit the same ten tiles in two rows, but at 390px that left
+     each tile ~64px wide and the grid read as jammed. Four columns give ~80px,
+     which is the roomy feel the old 8-visible layout had, and the third row
+     is filled rather than ragged: Income and Other — the income one and the
+     catch-all — span two columns each as wide tiles. */
+  .tile-grid {
+    display: grid;
+    /* minmax(0, …) not 1fr: a plain 1fr floors each track at the tile's
+       min-content width, and the longer labels are wide enough to push the
+       last column off-screen rather than letting the track shrink. */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tile {
+    /* --cat is inherited from the data-cat attribute that initTiles puts on
+       this button, so each tile carries a faint wash of its own category
+       colour. The wash is identity only — the EDGE comes from --tile-shadow
+       (see the token, which uses elevation in light and an inset hairline in
+       dark). Don't raise --tile-tint to try to make the edge: that route ends
+       in muddy pastels light and solid colour slabs dark, both of which
+       drown out the icon chips. */
+    background: color-mix(in srgb,
+                var(--cat, var(--cat-other)) var(--tile-tint), var(--tile-bg));
+    /* REQUIRED, and not the same as omitting it: .tile is a <button>, so with
+       no border declaration the UA's default button border paints a hard grey
+       outline on all ten tiles. Every other converted control in this file
+       states border: none for the same reason. */
+    border: none;
+    box-shadow: var(--tile-shadow);
+    border-radius: var(--r-card);
+    min-height: 74px;
+    padding: 10px 3px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Safe to centre because .tile-label below reserves the same height in
+       every tile, so all ten content blocks are identical and the icons land
+       on one line anyway. Centring without that reservation lifts the
+       wrapping tile's icon above the row; top-anchoring instead leaves dead
+       space under the short labels. Equal label heights avoids both. */
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.28s var(--ease-spring),
+                background var(--dur-fast) ease;
+  }
+  /* Press down fast and linear; release springs back with a little overshoot.
+     Overriding duration + curve on :active is what makes the two halves
+     asymmetric, which is what reads as a physical button. */
+  .tile:active,
+  .tag-chip:active,
+  .calc-add-btn:active {
+    transition-duration: 0.08s;
+    transition-timing-function: var(--ease-standard);
+  }
+  .tile:active {
+    transform: scale(0.96);
+    /* Deepen the tile's own hue rather than dropping a neutral grey over it,
+       which would flash the tint away on every press. */
+    background: color-mix(in srgb,
+                var(--cat, var(--cat-other)) var(--tile-tint-active), var(--tile-bg));
+  }
+  /* The two catch-all tiles take the last row as a pair, laid out
+     horizontally so they read as a deliberate group rather than as two
+     square tiles stretched to fit. */
+  .tile.wide {
+    grid-column: span 2;
+    flex-direction: row;
+    justify-content: center;
+    min-height: 50px;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+  .tile.wide .tile-label {
+    width: auto;
+    text-align: left;
+    font-size: 13px;
+  }
+  /* Rounded squares, not circles — the Settings.app icon-chip form, and the
+     single strongest "this is iOS" signal in the app. Kept consistent across
+     all four sizes: .tile-icon 8, .calc-cat's 6, .entry-dot 7, .rule-dot 6.
+     The glyph stays white in both themes; see --cat-fg. */
+  .tile-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cat-fg);
+    flex-shrink: 0;
+  }
+  .tile-label {
+    /* Floor is 11px: below that these labels stop being comfortably legible
+       on a phone. At four columns every name fits on one line down to a
+       320px viewport, but the soft hyphens defined in the script stay as a
+       safety net — the tile centres one or two lines equally well. */
+    font-size: clamp(11px, 3.2vw, 12.5px);
+    /* --ink, not --ink-soft: these are primary labels in iOS terms, and on the
+       more saturated dark tints the soft grey fell under 4.5:1. */
+    color: var(--ink);
+    text-align: center;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    width: 100%;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    overflow-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* Four columns leave every label on one line down to a 320px viewport, so
+     the two-line reservation this used to need at five columns is gone — it
+     only added dead space under the short names. */
+
+  /* Category colour is driven by a data-cat attribute rather than an inline
+     background, so the whole palette re-resolves on a live light/dark flip
+     with zero JS. Writing a hex inline would leave every chip stale until the
+     next render(). --cat is inherited, so a future tinted-row treatment can
+     read it for free. */
+  [data-cat="grocery"]   { --cat: var(--cat-grocery); }
+  [data-cat="dining"]    { --cat: var(--cat-dining); }
+  [data-cat="health"]    { --cat: var(--cat-health); }
+  [data-cat="transport"] { --cat: var(--cat-transport); }
+  [data-cat="utilities"] { --cat: var(--cat-utilities); }
+  [data-cat="shopping"]  { --cat: var(--cat-shopping); }
+  [data-cat="education"] { --cat: var(--cat-education); }
+  [data-cat="leisure"]   { --cat: var(--cat-leisure); }
+  [data-cat="other"]     { --cat: var(--cat-other); }
+  [data-cat="income"]    { --cat: var(--cat-income); }
+  /* The fallback covers a missing or unrecognised slug — an old backup, or a
+     category renamed since (see RENAMED_CATEGORIES). */
+  .tile-icon,
+  .entry-dot,
+  .rule-dot,
+  .cat-bar-fill { background: var(--cat, var(--cat-other)); }
+
+  /* Swipe-to-delete: .entry is the clipping track, .entry-content slides over
+     the delete action sitting behind it. */
+  .entry {
+    position: relative;
+    overflow: hidden;
+    background: var(--card); /* backstop: never let anything show through */
+  }
+  .entry-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    min-height: 62px;
+    background: var(--card);
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1),
+                background 0.14s ease;
+  }
+  /* Layer promotion only while dragging — a permanent will-change on every
+     row means dozens of compositor layers repainting on every render. */
+  .entry.swiping .entry-content,
+  .entry.open-left .entry-content,
+  .entry.open-right .entry-content { will-change: transform; }
+  .entry.swiping .entry-content { transition: none; }
+  /* The list had no touch highlight at all — only a hover rule, which a phone
+     never sees. iOS cells highlight on press. */
+  .entry-content:active { background: var(--fill-press); }
+  /* iOS separators start at the TEXT, not the cell edge — and a border can't
+     be inset, hence the pseudo-element. It lives on .entry-content rather than
+     .entry so it travels with the row during a swipe, which is what iOS does.
+     Do NOT use transform: scaleY(0.5) for a "hairline": the thin impression
+     comes from the colour, and a half-pixel row vanishes on 1x displays. */
+  .entry-content::after,
+  .cat-row::after,
+  .due-row::after,
+  .rule-row::after,
+  .rs-row::after,
+  .rate-row::after,
+  .as-opt::after,
+  .cat-group-label::after {
+    content: '';
+    position: absolute;
+    left: var(--sep-inset-icon);
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--hairline);
+    pointer-events: none;
+  }
+  /* Rows with no leading icon inset only to the text edge. */
+  .rs-row::after,
+  .rate-row::after,
+  .as-opt::after,
+  .cat-group-label::after { left: var(--sep-inset-text); }
+  .entry:last-child .entry-content::after,
+  .cat-row:last-child::after,
+  .due-row:last-child::after,
+  .rule-row:last-child::after,
+  .rs-row:last-child::after,
+  .rate-row:last-child::after,
+  .as-opt:last-child::after { display: none; }
+  /* Action panels are only painted while a swipe is actually happening.
+     Leaving a full-height red Delete panel permanently rendered under
+     every row means any compositor hiccup on re-render can flash it
+     through — which is exactly what iOS did after saving an edit. */
+  .entry-actions,
+  .entry-actions-left {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 96px;
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .entry-actions { right: 0; }
+  .entry-actions-left { left: 0; }
+  .entry.swiping .entry-actions,
+  .entry.swiping .entry-actions-left,
+  .entry.open-right .entry-actions,
+  .entry.open-left .entry-actions-left {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* iOS swipe actions: 17px regular on a full-bleed fill. */
+  .entry-edit {
+    flex: 1;
+    border: none;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: var(--fs-body);
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .entry-edit:active { filter: brightness(0.92); }
+  .entry-delete {
+    flex: 1;
+    border: none;
+    background: var(--expense-fill);
+    color: var(--on-accent);
+    font-size: var(--fs-body);
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .entry-delete:active { filter: brightness(0.9); }
+  .entry-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .entry-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cat-fg);
+  }
+  .entry-text { display: flex; flex-direction: column; min-width: 0; }
+  .entry-desc {
+    font-size: var(--fs-body);
+    letter-spacing: var(--tr-17);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Clamped like .entry-desc above: a long category name ('Aug 17 ·
+     Utilities') used to wrap and make that one row taller than its
+     neighbours, so row heights rippled with the day of the month. */
+  .entry-meta {
+    font-size: var(--fs-subhead);
+    letter-spacing: var(--tr-15);
+    color: var(--ink-soft);
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .entry-right { display: flex; align-items: center; flex-shrink: 0; }
+  .entry-amount {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-body);
+    /* iOS list values are regular weight; the colour already carries the
+       polarity, so extra weight only made the column shout. */
+    font-weight: 400;
+  }
+  .entry-amount.expense { color: var(--expense); }
+  .entry-amount.income { color: var(--income); }
+  .show-all-btn {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    border: none;
+    border-top: 1px solid var(--hairline);
+    background: var(--card);
+    color: var(--accent-text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .show-all-btn:active { background: var(--fill-press); }
+  .swipe-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 10px 4px 2px;
+  }
+
+  /* iOS inset-grouped card: defined by its fill against the page, never by a
+     stroke. overflow:hidden stays — it clips the swipe track and rounds the
+     first/last row. */
+  .entry-list-card {
+    background: var(--card);
+    border-radius: var(--r-list);
+    overflow: hidden;
+  }
+  /* iOS UISegmentedControl: a recessed track with a floating thumb, not a
+     bordered strip of buttons. overflow must stay VISIBLE — hidden clips the
+     thumb's shadow flat and the whole effect collapses. */
+  .tab-row {
+    display: flex;
+    padding: 2px;
+    border: none;
+    border-radius: var(--r-seg);
+    background: var(--segment-track);
+    overflow: visible;
+    margin-bottom: 10px;
+  }
+  /* The month is now the scope for the whole view, so it stays pinned
+     while you scroll rather than scrolling away above the entries. It reads
+     as the balance card's own header — same surface and border, divided
+     from the calendar/summary below by its own bottom edge — rather than a
+     detached bar, so .balance-flip below drops its top border/radius to
+     keep that seam a single line. */
+  .month-nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--card);
+    border-radius: var(--r-list) var(--r-list) 0 0;
+    /* Reads as a bar rather than a floating chip; .balance-flip below joins
+       onto this line. */
+    border-bottom: 1px solid var(--hairline);
+    padding: 6px 16px 6px;
+  }
+  .month-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .month-label {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    min-width: 0;
+    padding: 0 6px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    /* explicit, or browsers grey the text out when disabled */
+    color: var(--ink);
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight: 600;
+    letter-spacing: var(--tr-17);
+    /* The year changes width between e.g. 2026 and 2027 mid-swipe. */
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    cursor: pointer;
+  }
+  .month-label:disabled { cursor: default; }
+  .today-pill {
+    display: none;
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+    /* Tinted, not filled: iOS has no solid micro-pill inside a nav title. */
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent-text);
+    font-size: var(--fs-caption2);
+    font-weight: 600;
+    letter-spacing: var(--tr-11);
+  }
+  /* Only offered when it would actually do something. */
+  .month-label.actionable .today-pill { display: inline-block; }
+  .month-label.actionable:active { background: var(--fill-press); }
+  /* iOS bar chevrons are borderless tinted glyphs. The 44x44 box stays — it's
+     the touch target, not decoration. */
+  .month-arrow {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: var(--r-control);
+    background: none;
+    color: var(--accent-text);
+    font-size: 26px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .month-arrow:active { background: var(--fill-press); }
+  /* Single source of truth. The flex properties below used to live in a second
+     .tab-btn rule down in the Repeats section, which silently won for
+     display/align-items/justify-content/gap — so anything written here for
+     those four was dead. Merged; don't re-split it. */
+  .tab-btn {
+    position: relative;
+    flex: 1;
+    /* Apple ships this control at 32pt. Held at 36 as a deliberate compromise:
+       still unmistakably an iOS segmented control, but closer to the 44pt
+       touch-target minimum on something tapped constantly. */
+    min-height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--r-seg-thumb);
+    font-size: var(--fs-footnote);
+    font-weight: 500;
+    letter-spacing: var(--tr-13);
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    /* Holds the label beside the due-count badge (see .tab-count). */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background var(--dur) var(--ease-standard),
+                box-shadow var(--dur) var(--ease-standard);
+  }
+  /* iOS shows a divider only between two UNSELECTED segments — which is
+     exactly what the adjacent-sibling selector encodes, no :has() needed. A
+     full-height border on every seam (what this used to have) reads as broken
+     next to a floating thumb. */
+  .tab-btn:not(.active) + .tab-btn:not(.active)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--hairline);
+  }
+  /* The thumb. */
+  .tab-btn.active {
+    background: var(--segment-thumb);
+    font-weight: 600;
+    box-shadow: var(--sh-thumb);
+  }
+
+  .cat-row { position: relative; }
+  /* The summary line is the disclosure control for the entries beneath it. */
+  .cat-row-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .cat-row-main:active { background: var(--fill-press); }
+  .cat-row-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .cat-row-body { flex: 1; min-width: 0; }
+  .cat-row-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .cat-row-name { font-size: var(--fs-body); letter-spacing: var(--tr-17); color: var(--ink); }
+  .cat-row-count { font-size: var(--fs-footnote); color: var(--ink-soft); margin-top: 1px; }
+  .cat-row-amount {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-body);
+    font-weight: 400;
+  }
+  .cat-chevron {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--label-tertiary);
+    transition: transform 0.18s ease;
+  }
+  .cat-row-main[aria-expanded="true"] .cat-chevron { transform: rotate(90deg); }
+
+  /* Month-over-month change. This is a polarity reading, not a category
+     identity, so it takes the status colours (--expense / --income) rather
+     than any category hue — and it always ships an arrow and a number, so
+     the meaning never rests on colour alone. */
+  .cat-delta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--ink-soft);
+  }
+  .cat-delta.worse { color: var(--expense); }
+  .cat-delta.better { color: var(--income); }
+  .cat-delta-arrow { font-size: 11px; line-height: 1; }
+
+  .cat-bar-track {
+    height: 4px;
+    background: var(--fill-track);
+    border-radius: var(--r-pill);
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .cat-bar-fill {
+    height: 100%;
+    /* UIProgressView rounds both ends, so the fill reads as a capsule rather
+       than a measured length with a square baseline. (It used to be square on
+       the left deliberately; the iOS form wins here.) */
+    border-radius: var(--r-pill);
+    /* A category worth a rounding error still gets a visible mark instead of
+       disappearing, which would read as 'no spending' rather than 'a little'.
+       4 not 3: a 4px-tall rounded bar needs its own height to look like a
+       mark rather than a sliver. */
+    min-width: 4px;
+  }
+
+  /* Disclosure: the individual entries behind a category's total. */
+  .cat-detail { padding: 0 16px 10px 52px; }
+  .cat-detail[hidden] { display: none; }
+  .cat-detail-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 36px;
+    padding: 5px 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    border-top: 1px solid var(--hairline);
+  }
+  .cat-detail-row:active { opacity: 0.55; }
+  .cat-detail-desc {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cat-detail-date { flex-shrink: 0; font-size: 12px; color: var(--ink-soft); }
+  .cat-detail-amount.expense { color: var(--expense); }
+  .cat-detail-amount.income { color: var(--income); }
+  .cat-detail-amount {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .month-arrow[disabled] {
+    opacity: 0.28;
+    cursor: default;
+  }
+  .cat-group-label {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: var(--fs-footnote);
+    letter-spacing: var(--tr-13);
+    color: var(--ink-soft);
+    padding: 20px 16px 6px;
+  }
+  .cat-group-total {
+    font-size: 13px;
+    letter-spacing: 0;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  /* CAREFUL: this class styles two semantically opposite controls — "Clear
+     all data" (destructive) and "Help" (neutral, via .help-link). iOS colours
+     a destructive action red, so .help-link below MUST override it back to the
+     tint or the Help link turns red too. Underline dropped: iOS uses plain
+     tinted/red labels, never underlined ones. */
+  .reset-link {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    text-align: center;
+    margin-top: 28px;
+    font-size: var(--fs-body);
+    color: var(--expense);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .help-link { color: var(--accent-text); }
+  .backup-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .backup-btn {
+    flex: 1;
+    min-height: 44px;
+    padding: 0;
+    border: none;
+    border-radius: var(--r-button);
+    background: var(--fill-track);
+    color: var(--accent-text);
+    font-size: var(--fs-body);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .backup-btn:active { background: var(--fill-press); }
+  .backup-btn.full { width: 100%; }
+
+  /* No accounts — a self-chosen code is the only key, so restoring after a
+     wipe means either the URL (see setSyncCode's location.hash) or this
+     panel survived, which is why the hint below tells people to bookmark
+     the page rather than just trust local storage. */
+  .sync-block { margin-top: 20px; }
+  .sync-restore-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .sync-restore-row .note-input { flex: 1; }
+  .sync-restore-row .backup-btn {
+    flex: 0 0 auto;
+    padding: 0 16px;
+  }
+  .sync-code-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sync-code-row code {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--fill-track);
+    color: var(--ink);
+    /* A machine-readable code, so it takes the mono face. */
+    font-family: var(--font-mono);
+    font-size: var(--fs-subhead);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .sync-code-row .backup-btn {
+    flex: 0 0 auto;
+    padding: 0 16px;
+  }
+  .sync-hint {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 10px 0 0;
+  }
+  .sync-status {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin: 8px 0 0;
+    min-height: 16px;
+  }
+
+  /* Calculator overlay.
+     Presented as a sheet that slides up, the way every native iOS modal
+     does — it used to hard-cut from display:none, which is the single
+     biggest tell that this isn't a native app. Kept out of the layout with
+     visibility rather than display so the transform can animate at all, and
+     the visibility flip is delayed on close until the slide has finished
+     (same technique as .toast below). The sheet's own ground lives on
+     .calc-sheet; this element carries only the dim, which fades in over the
+     same 0.3s so the page darkens as the sheet travels rather than snapping. */
+  .calc-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* Height is driven by JS off visualViewport so the Add button is never
+       trapped under the iOS keyboard. This is the no-JS fallback. */
+    height: 100%;
+    height: 100dvh;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    visibility: hidden;
+    pointer-events: none;
+    /* iOS dims behind a sheet; it just fades the dim in alongside the slide
+       rather than hard-cutting it, which background-color can animate. */
+    background: transparent;
+    transition: background 0.3s var(--ease-sheet), visibility 0s linear 0.3s;
+  }
+  .calc-overlay.open {
+    visibility: visible;
+    pointer-events: auto;
+    background: var(--overlay-dim);
+    transition: background 0.3s var(--ease-sheet), visibility 0s linear 0s;
+  }
+  /* An iOS sheet always leaves a sliver of the dimmed parent visible above it,
+       which is what makes the top corners readable at all. */
+  .calc-sheet {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    background: var(--sheet-bg);
+    border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+    transform: translateY(100%);
+    /* Decelerating curve — the sheet arrives rather than stopping dead. */
+    transition: transform 0.3s var(--ease-sheet);
+  }
+  .calc-overlay.open .calc-sheet { transform: translateY(0); }
+  /* Top half is locked at exactly 50% of the sheet, not "whatever's left
+     after the bottom claims its share" — the two previously competed via
+     flex-grow/shrink and the split drifted with content. */
+  .calc-top-half {
+    flex: 0 0 50%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .calc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex: 0 0 auto;
+    /* Clears the sheet grabber above it. */
+    padding-top: max(18px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: 8px;
+  }
+  .calc-cancel {
+    background: none;
+    border: none;
+    color: var(--accent-text);
+    font-size: var(--fs-body);
+    min-height: 44px;
+    padding: 0 4px 0 0;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .calc-cat {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 0 1 auto;
+    min-height: 44px;
+    font-size: 16px;
+    color: var(--ink-soft);
+  }
+  .calc-cat .tile-icon { width: 24px; height: 24px; border-radius: 6px; }
+  /* A native select is as wide as its longest option ('Transport'), which
+     stranded the caret far from short names like 'Other'. Show a label
+     sized to the actual value and lay the select over it invisibly. */
+  .cat-label {
+    font-size: 16px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    padding-right: 14px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+                      linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+    background-position: calc(100% - 5px) calc(50% + 1px), calc(100% - 1px) calc(50% + 1px);
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+  }
+  #calcCatSelect {
+    position: absolute;
+    inset: -1px;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    font-size: 16px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  /* Direction is now implied by category (Income = in, everything else =
+     out), so the toggle's slot goes to the date. */
+  .date-btn {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--r-control);
+    background: var(--fill-track);
+    color: var(--accent-text);
+    /* The repeat chip beside the date is a real <button>, so these two keep
+       the pair identical rather than letting the button take UA defaults. */
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .date-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .date-btn[hidden] { display: none; }
+  /* A bare icon hides which date is set, which matters when editing an old
+     entry — so the date shows itself whenever it isn't today. */
+  .date-badge {
+    font-size: var(--fs-footnote);
+    font-variant-numeric: tabular-nums;
+    font-family: inherit;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .date-btn.off-today {
+    border-color: var(--accent-text);
+    color: var(--accent-text);
+  }
+  .date-btn input[type="date"] {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    font-size: 16px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* The amount used to absorb all spare height. It only ever holds a short
+     number, so it's sized to content now and the keypad takes the slack. */
+  /* Amount owns the top half, so it's set larger — a small number floating
+     in a tall area reads as a layout bug rather than a design. */
+  .calc-display {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 24px 10px;
+    overflow: hidden;
+  }
+  .amount-sign {
+    font-weight: 500;
+    font-size: clamp(28px, 9vw, 44px);
+    line-height: 1;
+    color: var(--expense);
+  }
+  .amount-sign.income { color: var(--income); }
+  .calc-display-amount {
+    font-weight: 600;
+    font-size: clamp(44px, 16vw, 76px);
+    letter-spacing: -1px;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    word-break: break-all;
+    text-align: center;
+    transition: color 0.2s ease;
+  }
+  .calc-memo {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: 14px;
+  }
+  .calc-memo[hidden] { display: none; }
+
+  .tag-chip.add-tag {
+    min-width: 40px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--accent-text);
+    border-style: none;
+  }
+  .tag-chip.add-tag.active { background: var(--ios-fill-2); color: var(--accent-text); }
+  /* Exactly 50%, matching .calc-top-half — tags/keypad/button then split
+     that fixed box between them via their own flex rules. */
+  .calc-bottom {
+    flex: 0 0 50%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* One row. Two rows looked broken for categories with only 3-4 tags,
+     which left the second column half-empty and the row ragged. */
+  .calc-tags {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: 12px;
+  }
+  .calc-tags::-webkit-scrollbar { display: none; }
+  /* iOS capsule chip: a fill, not a stroke. 36 rather than 44 because iOS
+     ships these at 34pt, and .calc-tags' padding-bottom gives touch slop. */
+  .tag-chip {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 14px;
+    border: none;
+    border-radius: var(--r-pill);
+    background: var(--fill-track);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: var(--fs-subhead);
+    letter-spacing: var(--tr-15);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tag-chip.active {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .tag-chip { transition: transform 0.28s var(--ease-spring), background var(--dur-fast) ease; }
+  .tag-chip:active { transform: scale(0.96); }
+  .note-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: none;
+    border-radius: var(--r-control);
+    background: var(--fill-track);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 16px; /* keeps iOS from zooming on focus */
+    text-align: left;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  /* Real date input laid invisibly over the chip: tapping opens the native
+     picker while the chip shows a friendly 'Today' instead of 08/21/2026. */
+  /* Slack is shared, weighted toward the keypad, so a tall phone grows the
+     keys rather than leaving a void under the amount. Capped so keys don't
+     become absurd, and able to shrink on small screens. */
+  /* iOS number pads are rounded key caps separated by gaps of the sheet
+     ground — never a grid of 1px rules, which is what the old gap-over-a-
+     coloured-background trick produced.
+
+     HEIGHT BUDGET: .calc-bottom is a hard flex: 0 0 50%, and these gaps plus
+     the top padding cost ~24px inside the tightest box in the app. On a 667pt
+     viewport that overflows, so both max-height blocks below shrink the gaps
+     as well as the rows. Change one, check the other two. */
+  .calc-keypad {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, minmax(46px, 1fr));
+    gap: 6px;
+    padding: 6px max(20px, env(safe-area-inset-left)) 0
+                max(20px, env(safe-area-inset-right));
+    background: transparent;
+    /* Keeps the "this region is a keyboard" read without drawing the grid. */
+    border-top: 1px solid var(--hairline);
+  }
+  /* Tabular figures so the 12-key grid stays on one optical baseline and the
+     digits don't shift width between states. */
+  .calc-key {
+    background: var(--key-bg);
+    border: none;
+    border-radius: var(--r-key);
+    box-shadow: var(--sh-key);
+    min-height: 0;
+    padding: 0;
+    font-size: 25px;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .calc-key:active { background: var(--ios-fill-2); }
+  .calc-key.func { font-family: inherit; font-size: 18px; color: var(--ink-soft); }
+  .calc-add-btn {
+    flex-shrink: 0;
+    margin-top: 14px;
+    margin-left: max(20px, env(safe-area-inset-left));
+    margin-right: max(20px, env(safe-area-inset-right));
+    /* clears the home indicator on Face ID iPhones */
+    margin-bottom: calc(16px + env(safe-area-inset-bottom));
+    /* 50 is the iOS prominent-button height; the two max-height overrides
+       below are already smaller, so the cascade stays consistent. */
+    min-height: 50px;
+    padding: 0;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: none;
+    border-radius: var(--r-button);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    letter-spacing: var(--tr-17);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .calc-add-btn {
+    transition: transform 0.28s var(--ease-spring),
+                background var(--dur-fast) ease,
+                opacity var(--dur-fast) ease;
+  }
+  .calc-add-btn:active { transform: scale(0.975); opacity: 0.85; }
+  /* A successful add turns this button into a drawn checkmark in place, rather
+     than introducing a new control. */
+  .calc-add-btn.done { background: var(--income-fill); }
+  .calc-add-btn.done svg {
+    width: 24px;
+    height: 24px;
+    stroke-dasharray: 30;
+    animation: checkDraw 0.36s var(--ease-out) both;
+  }
+  @keyframes checkDraw {
+    from { stroke-dashoffset: 30; }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  /* Safety net for viewports shorter than any currently-supported iPhone
+     (this class was discontinued when iOS 16 dropped support) — keeps the
+     Add button reachable rather than clipped if content briefly exceeds
+     the 50% box, e.g. with the memo row open. */
+  /* .calc-bottom is a hard flex: 0 0 50%, and the keypad's grid rows are
+     minmax(46px, 1fr) — a MINIMUM track size, so the keypad cannot shrink
+     below 4 rows + gaps no matter how little room there is. That makes the
+     budget arithmetic load-bearing:
+
+       available = viewport-height / 2
+       needed    = tags + (4*row + 3*gap + pad) + (btn + margins)
+
+     Base rules need 48 + (4*46 + 3*6 + 6) + (50 + 14 + 16) = 336px, so they
+     are only safe above ~672px — hence the 700px threshold below rather than
+     the 600px one this used to have. (At 600 the band from ~601-671px
+     overflowed and pushed 'Add entry' under the fold; that was true before
+     this restyle too.) The block below needs
+       44 + (4*36 + 3*4 + 4) + (44 + 8 + 10) = 266px,
+     which clears a 553px viewport (iPhone SE with Safari chrome) by 10px.
+     That 553 is the floor: a ~500px PORTRAIT viewport would still overflow,
+     but no shipping phone has one — anything shorter than this is landscape,
+     which the max-height: 460px block below handles under different rules.
+     Change any number here and re-run both sums. */
+  @media (max-height: 700px) {
+    .calc-tags { padding-bottom: 8px; }
+    .calc-keypad { grid-template-rows: repeat(4, minmax(36px, 1fr)); gap: 4px; padding-top: 4px; }
+    .calc-add-btn { margin-top: 8px; margin-bottom: 10px; min-height: 44px; }
+  }
+
+  /* Landscape phone. The 50/50 split assumes a tall screen: at ~390px of
+     height the bottom half gets ~195px but needs ~270px for tags, keypad and
+     button, which pushed 'Add entry' clean off the bottom of the screen. A
+     short viewport doesn't need half of itself to show one number, so the
+     amount takes only what it needs and the keypad claims the remainder.
+     Sits before the desktop block below so a short desktop window keeps its
+     own sizing. */
+  @media (max-height: 460px) {
+    .calc-top-half { flex: 0 0 auto; }
+    .calc-display { flex: 0 0 auto; min-height: 0; padding: 2px 20px 4px; }
+    .calc-display-amount { font-size: clamp(26px, 9vh, 40px); }
+    .amount-sign { font-size: clamp(18px, 6vh, 28px); }
+    .calc-top { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 4px; }
+    .calc-bottom { flex: 1 1 auto; }
+    .calc-tags { padding-bottom: 8px; }
+    .calc-keypad { grid-template-rows: repeat(4, minmax(32px, 1fr)); gap: 3px; padding-top: 3px; }
+    .calc-add-btn {
+      margin-top: 6px;
+      margin-bottom: calc(6px + env(safe-area-inset-bottom));
+      min-height: 40px;
+    }
+    /* The memo row and tag chips together don't fit alongside the keypad
+       here; the chips are the redundant half since the memo field is what
+       the '+' chip opens. */
+    .calc-memo { padding-bottom: 6px; }
+    /* No height budget for the sheet's 10px sliver, and the grabber would
+       collide with a 6px-padded .calc-top. */
+    .calc-sheet, .help-sheet, .sheet-panel {
+      margin-top: 0;
+      border-radius: 0;
+    }
+    .calc-sheet::before,
+    .help-sheet::before,
+    .sheet-overlay:not(.anchored) .sheet-panel::before { display: none; }
+  }
+
+  /* Help overlay. Same slide-up sheet mechanics as the calculator, minus the
+     keyboard-aware resize — there's no text input to defend against.
+     .sheet-overlay / .sheet-panel share every rule here: the repeat editor
+     and the recurring-edit chooser are the same kind of object, and building
+     them on this vocabulary keeps one set of sheet mechanics in the file. */
+  .help-overlay,
+  .sheet-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    height: 100dvh;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    visibility: hidden;
+    pointer-events: none;
+    background: transparent;
+    transition: background 0.3s var(--ease-sheet), visibility 0s linear 0.3s;
+  }
+  .help-overlay.open,
+  .sheet-overlay.open {
+    visibility: visible;
+    pointer-events: auto;
+    background: var(--overlay-dim);
+    transition: background 0.3s var(--ease-sheet), visibility 0s linear 0s;
+  }
+  .help-sheet,
+  .sheet-panel {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    background: var(--sheet-bg);
+    border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s var(--ease-sheet);
+  }
+  /* The grabber. Deliberately NOT on .sheet-overlay.anchored's panel: that's
+     the fork chooser, i.e. an iOS action sheet, and action sheets have no
+     grabber — plus that panel scrolls, which would carry an absolute
+     pseudo-element away with it. */
+  .calc-sheet::before,
+  .help-sheet::before,
+  .sheet-overlay:not(.anchored) .sheet-panel::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 5px;
+    border-radius: 2.5px;
+    background: var(--grabber);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .help-overlay.open .help-sheet,
+  .sheet-overlay.open .sheet-panel { transform: translateY(0); }
+
+  /* A short chooser reads better anchored to the bottom edge than stretched
+     to full height, so .anchored lets the panel size to its content. */
+  .sheet-overlay.anchored { justify-content: flex-end; }
+  .sheet-overlay.anchored .sheet-panel {
+    flex: 0 0 auto;
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .help-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex: 0 0 auto;
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  /* iOS sheet nav title. */
+  .help-top h2 {
+    font-weight: 600;
+    font-size: var(--fs-body);
+    letter-spacing: var(--tr-17);
+    margin: 0;
+  }
+  /* The repeat editor's title sits between two controls rather than leading
+     the sheet, so it takes the UI face at the month-label's weight. */
+  .help-top h2.rs-title {
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 17px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .help-close {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 4px;
+    margin-right: -4px;
+    border: none;
+    background: none;
+    color: var(--accent-text);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .help-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px max(20px, env(safe-area-inset-left)) calc(40px + env(safe-area-inset-bottom));
+  }
+  .help-section { padding: 20px 0; border-bottom: 1px solid var(--hairline); }
+  .help-section:last-child { border-bottom: none; }
+  .help-section h3 {
+    font-size: var(--fs-footnote);
+    letter-spacing: var(--tr-13);
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+  .help-section p {
+    font-size: var(--fs-body);
+    line-height: var(--lh-prose);
+    color: var(--ink);
+    margin: 0 0 10px;
+  }
+  .help-section ol,
+  .help-section ul {
+    margin: 0 0 10px;
+    padding-left: 20px;
+  }
+  .help-section li {
+    font-size: var(--fs-body);
+    line-height: var(--lh-prose);
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .help-section p:last-child,
+  .help-section ol:last-child,
+  .help-section ul:last-child { margin-bottom: 0; }
+
+  /* ---- Repeats -------------------------------------------------------- */
+
+  /* The tab label carries the waiting count, because with nothing posting
+     itself this badge is the only thing that says work is outstanding. */
+  /* .tab-btn's flex rules used to live here; they're merged into the single
+     .tab-btn rule in the tab-row section above. */
+  /* A "waiting for you" count is a notification badge, so it takes the red.
+     Held at 11px: 13 overflows a 36px segment. */
+  .tab-count {
+    min-width: 18px;
+    padding: 2px 5px;
+    border-radius: var(--r-pill);
+    background: var(--expense-fill);
+    color: var(--on-accent);
+    font-size: var(--fs-caption2);
+    font-weight: 600;
+    letter-spacing: var(--tr-11);
+    text-align: center;
+  }
+  .tab-count[hidden] { display: none; }
+
+  /* A due occurrence carries two separate actions — open the keypad, or
+     confirm as-is — so the row is a plain container holding two sibling
+     buttons rather than a button with a button inside it. */
+  .due-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .due-open {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 8px 11px 16px;
+    min-height: 66px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .due-open:active { background: var(--fill-press); }
+  .due-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .due-text { display: flex; flex-direction: column; min-width: 0; }
+  .due-desc {
+    font-size: 15px;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .due-meta {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .due-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  /* Unconfirmed money is deliberately NOT --expense: it hasn't been spent
+     yet, and colouring it like a real outgoing overstates what's happened. */
+  .due-amount {
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .due-amount.est { font-weight: 400; color: var(--ink-soft); }
+  /* One tap to confirm a fixed amount. Still an explicit confirmation, just
+     not one that makes you retype a number you already know. */
+  .due-confirm {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: inherit;
+    margin-right: 12px;
+  }
+  .due-confirm:active { background: var(--accent); color: var(--on-accent); }
+  .due-chevron { width: 17px; height: 17px; color: var(--ink-soft); margin-right: 14px; flex-shrink: 0; }
+
+  /* A rule in the 'all repeats' list. */
+  .rule-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    min-height: 58px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .rule-row:active { background: var(--fill-press); }
+  .rule-row.paused { opacity: 0.5; }
+  .rule-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cat-fg);
+  }
+  .rule-name { font-size: 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
+  .rule-meta { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .rule-amount { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; flex-shrink: 0; }
+  .rule-amount.est { font-weight: 400; color: var(--ink-soft); }
+  .pill {
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    font-size: var(--fs-caption2);
+    letter-spacing: var(--tr-11);
+    color: var(--ink-soft);
+  }
+  /* Marks an entry in the ledger as having come from a repeat, so a figure
+     that appears every month is traceable back to the rule behind it. */
+  .entry-repeat {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    color: var(--ink-soft);
+  }
+  .entry-desc-wrap { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+
+  /* ---- Repeat editor sheet -------------------------------------------- */
+  .rs-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 0 16px;
+    min-height: 54px;
+    border: none;
+    background: none;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .rs-row:active { background: var(--fill-press); }
+  .rs-row.tall { min-height: 60px; padding-top: 9px; padding-bottom: 9px; }
+  .rs-row-label { display: flex; flex-direction: column; min-width: 0; }
+  .rs-row-note { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .rs-value {
+    position: relative;
+    flex-shrink: 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+    padding-right: 14px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+                      linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+    background-position: calc(100% - 5px) calc(50% + 1px), calc(100% - 1px) calc(50% + 1px);
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+  }
+  .rs-value.plain { padding-right: 0; background-image: none; }
+  /* Native controls laid invisibly over their label, the same trick the
+     category picker and date chip already use in the calculator. */
+  .rs-value select,
+  .rs-value input[type="date"] {
+    position: absolute;
+    inset: -8px -4px;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    font-size: 16px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  /* Same segmented-control recipe as .tab-row above. */
+  .rs-seg {
+    display: flex;
+    flex-shrink: 0;
+    padding: 2px;
+    border: none;
+    border-radius: var(--r-seg);
+    background: var(--segment-track);
+  }
+  .rs-seg button {
+    position: relative;
+    min-height: 32px;
+    padding: 0 14px;
+    border: none;
+    border-radius: var(--r-seg-thumb);
+    background: transparent;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: var(--fs-footnote);
+    font-weight: 500;
+    letter-spacing: var(--tr-13);
+    cursor: pointer;
+    transition: background var(--dur) var(--ease-standard),
+                box-shadow var(--dur) var(--ease-standard);
+  }
+  .rs-seg button:not(.on) + button:not(.on)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--hairline);
+  }
+  .rs-seg button.on {
+    background: var(--segment-thumb);
+    font-weight: 600;
+    box-shadow: var(--sh-thumb);
+  }
+
+  /* Amount over time: a rate list, drawn as a timeline so 'this figure
+     changes on this date' is readable at a glance. */
+  .rate-row {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+  }
+  .rate-row:last-of-type { border-bottom: none; }
+  /* Negative margin lets the connector run the full height of the row,
+     including its padding, so it meets the next row's dot without a gap. */
+  .rate-spine {
+    flex-shrink: 0;
+    width: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: -12px 0;
+    padding-top: 18px;
+  }
+  .rate-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .rate-dot.future { background: var(--card); border: 1.5px solid var(--accent); }
+  .rate-line { flex: 1; width: 1px; background: var(--hairline); margin-top: 4px; }
+  .rate-body { flex: 1; min-width: 0; }
+  .rate-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .rate-amount { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .rate-when { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .rate-tag {
+    flex-shrink: 0;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: var(--fs-caption2);
+    font-weight: 600;
+    letter-spacing: var(--tr-11);
+  }
+  .rate-tag.now { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-text); }
+  .rate-tag.later { border: 1px solid var(--accent); color: var(--accent-text); }
+
+  /* The rate list is a small editable table rather than a row that opens yet
+     another keypad — two native fields per rate keeps the whole history
+     visible while you change one figure in it. */
+  .rate-amount-input {
+    min-width: 0;
+    flex: 1;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .rate-amount-input::-webkit-outer-spin-button,
+  .rate-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .rate-from {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 7px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .rate-date {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 15px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .rate-del {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .rate-del:active { color: var(--expense); border-color: var(--expense); }
+
+  .rs-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    border: none;
+    border-top: 1px solid var(--hairline);
+    background: var(--card);
+    color: var(--accent-text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .rs-add:active { background: var(--fill-press); }
+  .rs-danger { color: var(--expense); }
+  .rs-note { font-size: 13px; color: var(--ink-soft); margin: 0 2px 22px; line-height: 1.45; }
+  .rs-save {
+    color: var(--accent-text);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    min-height: 44px;
+    padding: 0 0 0 4px;
+    margin-left: -4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .rs-toggle {
+    flex-shrink: 0;
+    /* Real iOS switch geometry: 51x31, 27px knob, 2px inset, 20px travel. */
+    width: 51px;
+    height: 31px;
+    padding: 2px;
+    border: none;
+    border-radius: var(--r-pill);
+    background: var(--switch-off);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.16s ease;
+  }
+  .rs-toggle-knob {
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    /* iOS knobs are white in both themes. */
+    background: var(--on-accent);
+    box-shadow: var(--sh-knob);
+    transition: transform 0.25s var(--ease-sheet);
+  }
+  /* iOS switches are green, not the app tint. */
+  .rs-toggle.on { background: var(--income-fill); }
+  .rs-toggle.on .rs-toggle-knob { transform: translateX(20px); }
+
+  /* ---- Recurring-edit chooser ----------------------------------------- */
+  .as-head { text-align: center; padding: 18px 24px 14px; }
+  .as-title { margin: 0; font-size: 16px; font-weight: 600; }
+  .as-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); line-height: 1.4; }
+  .as-group {
+    margin: 0 16px 10px;
+    background: var(--card);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .as-opt {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 16px;
+    min-height: 68px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .as-opt:active { background: var(--fill-press); }
+  .as-opt-text { display: flex; flex-direction: column; min-width: 0; }
+  .as-opt-title { font-size: var(--fs-body); color: var(--ink); }
+  .as-opt-note { font-size: 13px; color: var(--ink-soft); margin-top: 2px; line-height: 1.35; }
+  .as-opt .as-chevron { width: 16px; height: 16px; color: var(--ink-soft); flex-shrink: 0; }
+  .as-cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% - 32px);
+    margin: 0 16px;
+    min-height: 52px;
+    border: none;
+    border-radius: 14px;
+    background: var(--card);
+    /* iOS action-sheet Cancel is a semibold tinted label on its own card. */
+    color: var(--accent-text);
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .as-cancel:active { background: var(--fill-press); }
+
+  /* Undo toast.
+     Dismissal is driven by opacity/visibility, not by transform distance.
+     A pure translate has to travel its own height PLUS the bottom offset,
+     and that offset grows with env(safe-area-inset-bottom) — on a Face ID
+     iPhone the toast never cleared the screen and left a visible sliver. */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 12px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: calc(100vw - 32px);
+    padding: 12px 12px 12px 18px;
+    border-radius: var(--r-pill);
+    /* Deliberately opaque, no backdrop-filter: this element animates transform
+       AND is position:fixed, which is a known iOS Safari flicker combination.
+       At 94% the difference isn't visible anyway. */
+    background: var(--toast-bg);
+    color: var(--toast-fg);
+    box-shadow: var(--sh-toast);
+    font-size: var(--fs-subhead);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+    transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 0.2s ease,
+                visibility 0s linear 0.24s;
+  }
+  .toast.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 0.16s ease,
+                visibility 0s linear 0s;
+  }
+  .toast button {
+    background: none;
+    border: none;
+    /* The HUD is dark in both themes, so the action takes the dark-mode blue
+       for contrast against it regardless of the page theme. */
+    color: #0A84FF;
+    font-family: inherit;
+    font-size: var(--fs-subhead);
+    font-weight: 600;
+    /* iOS never underlines an action. */
+    text-decoration: none;
+    min-height: 32px;
+    padding: 0 6px;
+    cursor: pointer;
+  }
+
+  /* Hover styles only where a real pointer exists, so iOS doesn't leave
+     buttons stuck in a hover state after being tapped. */
+  @media (hover: hover) and (pointer: fine) {
+    .tile:hover {
+      background: color-mix(in srgb,
+                  var(--cat, var(--cat-other)) var(--tile-tint-active), var(--tile-bg));
+    }
+    /* These controls are now borderless fills with tinted labels, so hover
+       deepens the fill rather than darkening the text or adding a border. */
+    .backup-btn:hover { background: var(--ios-fill-2); }
+    .month-arrow:hover { background: var(--fill-press); }
+    .month-arrow[disabled]:hover { background: none; }
+    .month-label.actionable:hover { background: var(--fill-press); }
+    .flip-zone:hover .flip-hint { color: var(--ink-soft); }
+    .tab-btn:not(.active):hover { background: var(--fill-press); }
+    .help-link:hover,
+    .calc-cancel:hover,
+    .help-close:hover,
+    .rs-save:hover { opacity: 0.65; }
+    #resetBtn:hover { opacity: 0.65; }
+    .calc-key:hover { background: var(--ios-fill-2); }
+    .calc-add-btn:hover { opacity: 0.88; }
+    .entry:hover .entry-content { background: var(--fill-press); }
+    .tag-chip:not(.active):hover { background: var(--ios-fill-2); }
+    .date-btn:hover { background: var(--ios-fill-2); }
+
+    /* Mouse users can't swipe, so the delete action fades in on row hover
+       (and on keyboard focus) instead of being dragged out. A permanent
+       right-hand gutter keeps it from ever covering the amount. */
+    .swipe-hint { display: none !important; }
+    /* No swipe on a mouse: delete is a hover action, edit is a row click. */
+    .entry-actions-left { display: none; }
+    .entry-content { padding-right: 92px; cursor: pointer; }
+    .entry-actions {
+      width: 76px;
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.14s ease;
+    }
+    .entry:hover .entry-actions,
+    .entry:focus-within .entry-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .entry-delete { font-size: 14px; }
+    .entry-delete:hover { filter: brightness(1.08); }
+  }
+
+  /* Keyboard users always get a reachable delete button, even without hover. */
+  .entry-delete:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---- Desktop / large viewports ------------------------------------- */
+  @media (min-width: 800px) {
+    body { background: var(--page-surround); }
+    .wrap {
+      max-width: 560px;
+      min-height: 100vh;
+      background: var(--paper);
+      padding: 40px 32px 64px;
+    }
+    .balance-amount { font-size: 46px; }
+    .tile-grid { gap: 12px; }
+    .tile { min-height: 96px; }
+    .tile.wide { min-height: 64px; }
+    .tile-label { font-size: 13px; }
+    .tile.wide .tile-label { font-size: 14px; }
+    .entry-content { min-height: 64px; }
+  }
+
+  /* On a pointer device the full-screen keypad takeover feels wrong;
+     present it as a centered modal over a dimmed page instead. */
+  @media (min-width: 800px) and (hover: hover) and (pointer: fine) {
+    /* A slide up from the bottom of the viewport is a long, odd journey for
+       something that lands in the middle of the screen, so the desktop modal
+       fades and settles in place instead, and the dim fades with it. */
+    .calc-overlay,
+    .help-overlay,
+    .sheet-overlay {
+      opacity: 0;
+      transition: opacity 0.2s ease, visibility 0s linear 0.24s;
+    }
+    .calc-overlay.open,
+    .help-overlay.open,
+    .sheet-overlay.open {
+      opacity: 1;
+      transition: opacity 0.2s ease, visibility 0s linear 0s;
+    }
+    .calc-sheet,
+    .help-sheet,
+    .sheet-panel {
+      transform: translateY(6px) scale(0.985);
+      transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .calc-overlay.open .calc-sheet,
+    .help-overlay.open .help-sheet,
+    .sheet-overlay.open .sheet-panel { transform: translateY(0) scale(1); }
+
+    .calc-overlay {
+      height: 100%;
+      bottom: 0;
+      background: var(--overlay-dim);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    /* A centred modal, so it takes an all-round radius and loses both the
+       sheet's top-edge sliver and its grabber. */
+    .calc-sheet {
+      flex: 0 1 auto;
+      width: 100%;
+      max-width: 380px;
+      max-height: 100%;
+      margin-top: 0;
+      background: var(--sheet-bg);
+      border: none;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--sh-modal);
+    }
+    .calc-sheet::before,
+    .help-sheet::before,
+    .sheet-overlay:not(.anchored) .sheet-panel::before { display: none; }
+    .calc-top-half { flex: 0 0 auto; }
+    .calc-top { padding: 16px 18px 10px; }
+    .calc-display { flex: 0 0 auto; min-height: 0; padding: 12px 24px 8px; }
+    .calc-display-amount { font-size: 40px; }
+    .calc-tags { padding: 0 18px 10px; }
+    .calc-memo { padding: 0 18px 12px; }
+    .calc-bottom { flex: 0 0 auto; }
+    .calc-keypad {
+      flex: 0 0 auto;
+      margin-top: 0;
+      grid-template-rows: repeat(4, 52px);
+      gap: 6px;
+      padding: 6px 18px 0;
+    }
+    .calc-key { min-height: 52px; font-size: 22px; }
+    .calc-add-btn { margin: 14px 18px 18px; }
+
+    .help-overlay,
+    .sheet-overlay,
+    .sheet-overlay.anchored {
+      height: 100%;
+      bottom: 0;
+      background: var(--overlay-dim);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .help-sheet,
+    .sheet-panel,
+    .sheet-overlay.anchored .sheet-panel {
+      width: 100%;
+      max-width: 420px;
+      max-height: min(640px, 100%);
+      display: flex;
+      flex-direction: column;
+      background: var(--sheet-bg);
+      border: none;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--sh-modal);
+    }
+    .sheet-overlay.anchored .sheet-panel {
+      overflow-y: auto;
+      padding-bottom: 16px;
+    }
+    .help-top { padding: 16px 20px 12px; }
+  }
