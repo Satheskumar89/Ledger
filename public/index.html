@@ -127,7 +127,6 @@
   </div>
   <p class="swipe-hint" id="swipeHint" style="display:none;">Swipe left to delete · right to edit</p>
 
-  <button class="reset-link" id="resetBtn">Clear all data</button>
   <div class="backup-row">
     <button type="button" class="backup-btn" id="exportBtn">Export backup</button>
     <button type="button" class="backup-btn" id="importBtn">Import backup</button>
@@ -156,8 +155,28 @@
         <button type="button" class="backup-btn" id="syncNowBtn">Sync now</button>
         <button type="button" class="backup-btn" id="disableSyncBtn">Turn off</button>
       </div>
+      <!-- One-way overrides. Separate row from "Sync now" because they are a
+           different kind of action: that one works out which side is newer,
+           these two declare it. -->
+      <div class="backup-row">
+        <button type="button" class="backup-btn" id="pullCloudBtn">Pull from cloud</button>
+        <button type="button" class="backup-btn" id="pushCloudBtn">Push to cloud</button>
+      </div>
+      <p class="sync-hint">Pull replaces this device with the cloud copy. Push replaces the
+        cloud copy with this device. Use them when both sides have changed and sync stops to
+        ask which you want.</p>
       <p class="sync-status" id="syncStatus" aria-live="polite"></p>
     </div>
+  </div>
+
+  <div class="sync-block">
+    <p class="section-label">Clear data</p>
+    <div class="backup-row">
+      <button type="button" class="backup-btn danger" id="clearLocalBtn">This device</button>
+      <button type="button" class="backup-btn danger" id="clearCloudBtn">Cloud only</button>
+      <button type="button" class="backup-btn danger" id="clearBothBtn">Both</button>
+    </div>
+    <p class="sync-hint" id="clearHint"></p>
   </div>
 
   <button type="button" class="reset-link help-link" id="helpBtn">Help</button>
@@ -251,10 +270,19 @@
    <div class="help-section">
     <h3>Sync across your devices</h3>
     <p>Tap <strong>Enable cloud sync</strong> at the bottom of the page to get a sync code, something like <code>otter-4821-a1b2</code>. Enter that same code on another device to link it to the same ledger — entries, repeats, and your currency setting all travel with it.</p>
-    <p>Once two devices share a code, opening the app on either one compares timestamps and brings the older side up to date automatically — add an expense on your phone, then open this page on your laptop, and it appears there without doing anything else. Editing on both at the exact same moment isn't something this resolves — whichever save reaches the cloud last simply wins — so it's built for one person moving between their own devices, not several people editing at once.</p>
+    <p>Once two devices share a code, opening the app on either one brings the older side up to date automatically — add an expense on your phone, then open this page on your laptop, and it appears there without doing anything else. Each saved copy carries a version number, and a device only accepts a copy that is genuinely further along than its own, so a device that has been closed for a week can't push its stale ledger over what you've done since.</p>
+    <p>If <em>both</em> sides changed — you edited on your phone while it was offline, and on your laptop in the meantime — there is no correct automatic answer, so sync stops and says so rather than picking one and destroying the other. That's what the two buttons are for: <strong>Pull from cloud</strong> replaces this device with the cloud copy, <strong>Push to cloud</strong> replaces the cloud copy with this device. It's built for one person moving between their own devices, not several people editing at once.</p>
     <p>There's no password. The code itself is what protects your data, the same way a shared Google Docs link works — anyone holding it can read or overwrite that ledger, so treat it like a link you wouldn't want posted publicly.</p>
     <p><strong>Bookmark this page, or add it to your Home Screen, once sync is on.</strong> The code is saved on this device too, but that's exactly what a storage wipe takes with it — the bookmarked link is the real safety net, since the code travels along with it.</p>
     <p><strong>Sync now</strong> checks and reconciles immediately if you don't want to wait for the next launch; <strong>Turn off</strong> stops syncing this device without deleting what's already stored under the code.</p>
+   </div>
+
+   <div class="help-section">
+    <h3>Clearing data</h3>
+    <p>With sync on, "delete my data" has to say which copy, so there are three:</p>
+    <p><strong>This device</strong> empties the ledger here and leaves the cloud copy alone — which means the next sync brings it straight back. That's the point of sync, so use this when you want a fresh start on one device, not to get rid of the data.</p>
+    <p><strong>Cloud only</strong> deletes the stored copy and keeps what's on this device. It also turns sync off here, because otherwise this device would simply re-upload its copy seconds later. Any other device still holding the code can re-upload its own, so clear those too if you want it gone for good.</p>
+    <p><strong>Both</strong> deletes the cloud copy and empties this device, and turns sync off. This is the one that cannot be undone — export a backup first if there's any doubt.</p>
    </div>
 
    <div class="help-section">
@@ -316,6 +344,12 @@
   const CURRENCY_KEY = 'ledger_currency_v1';
   const REPEATS_KEY = 'ledger_repeats_v1';
   const SYNC_CODE_KEY = 'ledger_sync_code_v1';
+  /* Which cloud version this device's data is derived from, and whether there
+     are local edits that haven't reached the cloud yet. These two are what
+     order the two sides now — see the comment on reconcileWithCloud for why
+     comparing timestamps could not do it correctly. */
+  const SYNC_BASE_KEY = 'ledger_sync_base_v1';
+  const SYNC_DIRTY_KEY = 'ledger_sync_dirty_v1';
 
   const memoryStore = {};
   const safeStorage = (function () {
@@ -459,7 +493,10 @@
   const tileGridEl = document.getElementById('tileGrid');
   const currencySelectEl = document.getElementById('currencySelect');
   const currencyLabelEl = document.getElementById('currencyLabel');
-  const resetBtn = document.getElementById('resetBtn');
+  const clearLocalBtn = document.getElementById('clearLocalBtn');
+  const clearCloudBtn = document.getElementById('clearCloudBtn');
+  const clearBothBtn = document.getElementById('clearBothBtn');
+  const clearHintEl = document.getElementById('clearHint');
   const exportBtn = document.getElementById('exportBtn');
   const importBtn = document.getElementById('importBtn');
   const importFile = document.getElementById('importFile');
@@ -473,6 +510,8 @@
   const copySyncCodeBtn = document.getElementById('copySyncCodeBtn');
   const syncNowBtn = document.getElementById('syncNowBtn');
   const disableSyncBtn = document.getElementById('disableSyncBtn');
+  const pullCloudBtn = document.getElementById('pullCloudBtn');
+  const pushCloudBtn = document.getElementById('pushCloudBtn');
   const helpBtn = document.getElementById('helpBtn');
   const helpOverlay = document.getElementById('helpOverlay');
   const helpClose = document.getElementById('helpClose');
@@ -881,30 +920,47 @@
     return `${word}-${digits}-${tail}`;
   }
 
+  /* Always lowercased. The server lowercases before it builds the KV key, so a
+     code that differs only in case addresses the SAME ledger there — but this
+     side used it verbatim for the base-version bookkeeping below, so a stray
+     capital (typed by hand, or carried in a bookmarked #sync hash) made this
+     device think it was tracking a different ledger than it was. */
+  function normalizeCode(code) {
+    return String(code || '').trim().toLowerCase();
+  }
+
   function getSyncCode() {
-    const fromHash = new URLSearchParams(location.hash.slice(1)).get('sync');
+    const fromHash = normalizeCode(new URLSearchParams(location.hash.slice(1)).get('sync'));
     if (fromHash) {
       try { safeStorage.setItem(SYNC_CODE_KEY, fromHash); } catch (e) {}
       return fromHash;
     }
-    try { return safeStorage.getItem(SYNC_CODE_KEY); } catch (e) { return null; }
+    try { return normalizeCode(safeStorage.getItem(SYNC_CODE_KEY)) || null; } catch (e) { return null; }
   }
 
   function setSyncCode(code) {
-    try { safeStorage.setItem(SYNC_CODE_KEY, code); } catch (e) {}
+    const norm = normalizeCode(code);
+    try { safeStorage.setItem(SYNC_CODE_KEY, norm); } catch (e) {}
     const params = new URLSearchParams(location.hash.slice(1));
-    params.set('sync', code);
+    params.set('sync', norm);
     history.replaceState(null, '', '#' + params.toString());
   }
 
   function clearSyncCode() {
     try { safeStorage.removeItem(SYNC_CODE_KEY); } catch (e) {}
+    /* The base version and dirty flag describe this device's position relative
+       to ONE code's history. Leaving them behind meant that turning sync off
+       and later adopting a different code started with a base version borrowed
+       from the old ledger — which reads as "I am already ahead of the cloud"
+       and pushes this device's data over it. */
+    try { safeStorage.removeItem(SYNC_BASE_KEY); } catch (e) {}
+    try { safeStorage.removeItem(SYNC_DIRTY_KEY); } catch (e) {}
     history.replaceState(null, '', location.pathname + location.search);
   }
 
-  // Last time THIS device's data changed — separate from "last successfully
-  // pushed", so reconcileWithCloud() can tell whether local or cloud is
-  // actually the newer copy instead of just trusting whichever it saw last.
+  // Last time THIS device's data changed. Kept for display, for the one-time
+  // migration off the old timestamp ordering, and because exported payloads
+  // carry it — NOT for deciding which side wins. See getLocalUpdatedAt.
   const LOCAL_UPDATED_KEY = 'ledger_local_updated_v1';
 
   // Set while applying a payload that came FROM the cloud, so that write
@@ -916,26 +972,58 @@
   function touchLocalUpdatedAt() {
     if (applyingRemote) return;
     try { safeStorage.setItem(LOCAL_UPDATED_KEY, new Date().toISOString()); } catch (e) {}
+    setDirty(true);
   }
 
+  /* Display only now. It is NOT what orders local against cloud any more, and
+     must not go back to being that: it is generated from each device's own wall
+     clock, so a phone whose clock is a few minutes off reverses the comparison
+     and the older copy wins on every reconcile. That is the mechanism behind
+     "an old version replaced the latest".
+
+     The dangerous fallback is gone too. This used to stamp `now` whenever local
+     data existed with no recorded timestamp, which meant a device holding STALE
+     entries (its timestamp key lost to a partial storage clear, or written by a
+     build predating the key) claimed to have just been edited — and then won
+     against the genuinely newer cloud copy and overwrote it. */
   function getLocalUpdatedAt() {
-    const stored = safeStorage.getItem(LOCAL_UPDATED_KEY);
-    if (stored) return stored;
-    // Upgrading from a version that didn't track this yet: existing local
-    // data with no timestamp is treated as current (not as ancient/epoch
-    // zero), so a cloud copy from before this device ever synced can't look
-    // newer by default and silently win.
-    if (loadEntries().length || loadRepeats().length) {
-      const now = new Date().toISOString();
-      try { safeStorage.setItem(LOCAL_UPDATED_KEY, now); } catch (e) {}
-      return now;
-    }
-    return null;
+    try { return safeStorage.getItem(LOCAL_UPDATED_KEY); } catch (e) { return null; }
   }
 
-  function syncPayload() {
+  function getBaseVersion() {
+    const raw = safeStorage.getItem(SYNC_BASE_KEY);
+    const v = parseInt(raw, 10);
+    return Number.isFinite(v) && v >= 0 ? v : 0;
+  }
+
+  function setBaseVersion(v) {
+    try { safeStorage.setItem(SYNC_BASE_KEY, String(v)); } catch (e) {}
+  }
+
+  function isDirty() {
+    try { return safeStorage.getItem(SYNC_DIRTY_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function setDirty(on) {
+    try {
+      if (on) safeStorage.setItem(SYNC_DIRTY_KEY, '1');
+      else safeStorage.removeItem(SYNC_DIRTY_KEY);
+    } catch (e) {}
+  }
+
+  function localHasData() {
+    return loadEntries().length > 0 || loadRepeats().length > 0;
+  }
+
+  function versionOf(payload) {
+    const v = payload && payload.version;
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function syncPayload(version) {
     return {
-      updatedAt: getLocalUpdatedAt() || new Date().toISOString(),
+      version,
+      updatedAt: new Date().toISOString(),
       currency: getCurrency(),
       entries: loadEntries(),
       repeats: loadRepeats()
@@ -943,6 +1031,12 @@
   }
 
   function applyCloudPayload(data) {
+    /* Any push still queued was scheduled from the data we are about to
+       replace. Letting it fire would send the pre-pull state back up under a
+       version number the server would then accept, re-publishing exactly the
+       stale copy this pull just corrected. */
+    clearTimeout(pushTimer);
+    pushTimer = null;
     applyingRemote = true;
     try {
       saveEntries(Array.isArray(data.entries) ? data.entries : []);
@@ -952,6 +1046,8 @@
       applyingRemote = false;
     }
     try { safeStorage.setItem(LOCAL_UPDATED_KEY, data.updatedAt || new Date().toISOString()); } catch (e) {}
+    setBaseVersion(versionOf(data));
+    setDirty(false);
     currencySelectEl.value = getCurrency();
     syncCurrencyLabel();
     render();
@@ -961,21 +1057,57 @@
     if (syncStatusEl) syncStatusEl.textContent = msg;
   }
 
-  async function pushToCloud(code) {
+  /* Claims `basedOn + 1` as the new version. The server refuses anything that
+     isn't ahead of what it actually holds (409), which is what stops a device
+     that decided from a stale read — a cached GET, a slow KV replica, a long
+     offline stretch — from publishing its older copy over the newer one.
+
+     `force` skips that guard and is only ever passed by the explicit "Push to
+     cloud" button, where overwriting the cloud IS the user's stated intent.
+
+     Returns 'ok' | 'conflict' | 'offline' | 'error' so callers can react;
+     several of them need to tell a lost race apart from a dead network. */
+  async function pushToCloud(code, opts) {
+    const options = opts || {};
+    const basedOn = Number.isFinite(options.basedOn) ? options.basedOn : getBaseVersion();
+    const next = basedOn + 1;
+    const url = `/api/sync/${encodeURIComponent(code)}` + (options.force ? '?force=1' : '');
     try {
-      const res = await fetch(`/api/sync/${encodeURIComponent(code)}`, {
+      const res = await fetch(url, {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(syncPayload())
+        body: JSON.stringify(syncPayload(next))
       });
-      setSyncStatus(res.ok ? 'Synced just now' : 'Sync failed — will retry on next change');
+      if (res.status === 409) {
+        /* Someone else got there first. The response carries what is actually
+           stored, so there is no need to re-GET (and no risk of the re-GET
+           being the stale one). */
+        let conflict = null;
+        try { conflict = await res.json(); } catch (e) {}
+        setSyncStatus('Another device saved newer data — reconciling…');
+        return { status: 'conflict', current: conflict && conflict.current };
+      }
+      if (!res.ok) {
+        setSyncStatus('Sync failed — will retry on next change');
+        return { status: 'error' };
+      }
+      setBaseVersion(next);
+      setDirty(false);
+      setSyncStatus('Synced just now');
+      return { status: 'ok', version: next };
     } catch (e) {
+      /* Stays dirty on purpose: the edits are still unpushed, so the next
+         reconcile has to know to send them. */
       setSyncStatus('Offline — will retry on next change');
+      return { status: 'offline' };
     }
   }
 
   async function pullFromCloud(code) {
-    const res = await fetch(`/api/sync/${encodeURIComponent(code)}`);
+    /* cache: 'no-store' as well as the server's no-store headers. Belt and
+       braces on purpose — this is the read that everything else is decided
+       from, and a cached answer here is what makes an old copy look current. */
+    const res = await fetch(`/api/sync/${encodeURIComponent(code)}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Sync request failed');
     return res.json();
   }
@@ -988,7 +1120,12 @@
     const code = getSyncCode();
     if (!code) return;
     clearTimeout(pushTimer);
-    pushTimer = setTimeout(() => pushToCloud(code), 1500);
+    pushTimer = setTimeout(async () => {
+      const result = await pushToCloud(code);
+      // Lost the race — pull the winner in rather than leaving this device
+      // silently out of date until the next launch.
+      if (result.status === 'conflict') await reconcileWithCloud(false);
+    }, 1500);
   }
 
   function refreshSyncUI() {
@@ -996,37 +1133,214 @@
     syncOffEl.hidden = !!code;
     syncOnEl.hidden = !code;
     if (code) syncCodeDisplayEl.textContent = code;
+    /* With no code there is no cloud copy to address, so those two targets
+       aren't merely pointless — "Both" would silently degrade to a local wipe
+       and read as if it had cleared a cloud copy that was never there. */
+    clearCloudBtn.disabled = !code;
+    clearBothBtn.disabled = !code;
+    clearHintEl.textContent = code
+      ? 'Cloud only and Both also turn sync off on this device, so the copy you just ' +
+        'deleted isn\'t re-uploaded on the next sync.'
+      : 'Sync is off, so there is no cloud copy to clear.';
   }
 
   enableSyncBtn.addEventListener('click', async () => {
     const code = randomSyncCode();
+    /* A brand-new code has no history, so start the counter from scratch. Left
+       over from a previous code, `base` would make this device claim to already
+       be several versions into a ledger that has none. */
+    setBaseVersion(0);
+    markVersionAdopted();
     setSyncCode(code);
-    touchLocalUpdatedAt();
+    setDirty(true);
     refreshSyncUI();
     setSyncStatus('Syncing…');
-    await pushToCloud(code);
+    await pushToCloud(code, { basedOn: 0, force: true });
+    refreshSyncUI();
   });
 
   restoreSyncBtn.addEventListener('click', async () => {
-    const code = syncCodeInputEl.value.trim().toLowerCase();
+    const code = normalizeCode(syncCodeInputEl.value);
     if (!code) return;
     restoreSyncBtn.disabled = true;
     try {
       const cloud = await pullFromCloud(code);
       if (!cloud) { alert('No data found for that code yet.'); return; }
-      if ((loadEntries().length || loadRepeats().length) &&
+      if (localHasData() &&
           !confirm('This replaces your current entries with the ones stored under that code. Continue?')) {
         return;
       }
       setSyncCode(code);
+      markVersionAdopted();
       applyCloudPayload(cloud);
       refreshSyncUI();
-      showToast(`Restored ${cloud.entries.length} entries from cloud`);
+      showToast(`Restored ${cloudEntryCount(cloud)} entries from cloud`);
     } catch (e) {
       alert('Could not reach the sync server. Check your connection and try again.');
     } finally {
       syncCodeInputEl.value = '';
       restoreSyncBtn.disabled = false;
+    }
+  });
+
+  /* ---- Explicit one-way overrides --------------------------------------
+     Both directions of reconcileWithCloud, but chosen by the user instead of
+     inferred. These are the resolution for the "both sides changed" conflict
+     it refuses to decide on its own, and the repair tool for a cloud copy that
+     is wrong — which is precisely when the automatic path must not be trusted
+     to work it out. */
+  pullCloudBtn.addEventListener('click', async () => {
+    const code = getSyncCode();
+    if (!code) return;
+    if (!confirm('Replace this device\'s data with the copy stored in the cloud? ' +
+                 'Anything changed here and not yet synced is lost.')) return;
+    pullCloudBtn.disabled = true;
+    setSyncStatus('Pulling from cloud…');
+    try {
+      const cloud = await pullFromCloud(code);
+      if (!cloud) {
+        setSyncStatus('Nothing stored under this code yet — nothing to pull');
+        return;
+      }
+      markVersionAdopted();
+      applyCloudPayload(cloud);
+      setSyncStatus('Pulled from cloud');
+      showToast(`Pulled ${cloudEntryCount(cloud)} entries from cloud`);
+    } catch (e) {
+      setSyncStatus('Could not reach the sync server');
+    } finally {
+      pullCloudBtn.disabled = false;
+    }
+  });
+
+  pushCloudBtn.addEventListener('click', async () => {
+    const code = getSyncCode();
+    if (!code) return;
+    if (!confirm('Replace the cloud copy with this device\'s data? ' +
+                 'Anything your other devices saved and this one hasn\'t seen is lost.')) return;
+    pushCloudBtn.disabled = true;
+    setSyncStatus('Pushing to cloud…');
+    try {
+      /* Read first, purely to land ABOVE whatever version is up there. Forcing
+         past the server's guard is what makes this an override, but the number
+         still has to be the highest anyone has used, or the other devices —
+         which order by version, not by who wrote last — would treat this push
+         as old news and ignore it. */
+      let currentVersion = 0;
+      try { currentVersion = versionOf(await pullFromCloud(code)); } catch (e) {}
+      const basedOn = Math.max(currentVersion, getBaseVersion());
+      markVersionAdopted();
+      const result = await pushToCloud(code, { basedOn, force: true });
+      if (result.status === 'ok') {
+        setSyncStatus('Cloud replaced with this device\'s data');
+        showToast('Pushed to cloud');
+      }
+    } finally {
+      pushCloudBtn.disabled = false;
+    }
+  });
+
+  /* ---- Clearing ---------------------------------------------------------
+     Three targets, because with sync on "clear my data" is genuinely
+     ambiguous and the wrong guess is unrecoverable.
+
+     Note what "cloud only" and "both" also do: they turn sync OFF on this
+     device. That isn't tidiness, it's the only way they can mean anything. A
+     device that still holds the code and still has local data re-seeds the
+     cloud on its very next reconcile (see the `!cloud` branch), so "delete the
+     cloud copy but keep syncing" would undo itself within seconds. */
+  function wipeLocalData() {
+    // Drop any pending undo first — otherwise its closure would push a
+    // deleted entry back into the store we just cleared.
+    hideToast();
+    clearTimeout(pushTimer);
+    pushTimer = null;
+    try { safeStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    try { safeStorage.removeItem(REPEATS_KEY); } catch (e) {}
+    invalidateCache();
+    repeatsCache = null;
+    showAllRows = false;
+  }
+
+  async function deleteCloudCopy(code) {
+    const res = await fetch(`/api/sync/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('Delete failed');
+  }
+
+  clearLocalBtn.addEventListener('click', () => {
+    const code = getSyncCode();
+    const warning = code
+      ? 'Delete all entries and repeats on THIS DEVICE only?\n\n' +
+        'The cloud copy is kept, so the next sync will bring it back here. ' +
+        'To remove it everywhere, use "Both" instead.'
+      : 'Delete all entries and repeats? This cannot be undone.';
+    if (!confirm(warning)) return;
+    wipeLocalData();
+    if (code) {
+      /* Back to "derived from nothing", so the surviving cloud copy is
+         unambiguously newer and gets adopted cleanly on the next reconcile
+         rather than this empty state looking like an edit worth pushing. */
+      setBaseVersion(0);
+      setDirty(false);
+      /* And drop the timestamp and the migration marker.
+
+         Version 0 vs base 0 is a real state — a cloud copy written by the
+         pre-versioning build that nothing has pushed to since — and there the
+         counters alone cannot tell "cloud is newer" from "already in step", so
+         a cleared device reported "Already up to date" and just sat there empty
+         while the cloud still held everything. Clearing the marker lets the
+         legacy bridge run again, and it decides on localHasData(), which is now
+         false, so the cloud copy wins. The stale timestamp goes with it: it
+         describes data that no longer exists here. */
+      clearVersionAdopted();
+      try { safeStorage.removeItem(LOCAL_UPDATED_KEY); } catch (e) {}
+    }
+    render();
+    showToast('Cleared on this device');
+  });
+
+  clearCloudBtn.addEventListener('click', async () => {
+    const code = getSyncCode();
+    if (!code) return;
+    if (!confirm('Delete the cloud copy stored under ' + code + '?\n\n' +
+                 'This device keeps its data, and sync is turned off here so it ' +
+                 'isn\'t immediately re-uploaded. Other devices still holding this ' +
+                 'code can re-upload their own copy.')) return;
+    clearCloudBtn.disabled = true;
+    try {
+      await deleteCloudCopy(code);
+      clearSyncCode();
+      refreshSyncUI();
+      setSyncStatus('');
+      showToast('Cloud copy deleted — sync turned off here');
+    } catch (e) {
+      alert('Could not reach the sync server. Nothing was deleted.');
+    } finally {
+      clearCloudBtn.disabled = false;
+    }
+  });
+
+  clearBothBtn.addEventListener('click', async () => {
+    const code = getSyncCode();
+    if (!confirm('Delete everything — this device AND the cloud copy' +
+                 (code ? ' under ' + code : '') + '?\n\nThis cannot be undone.')) return;
+    clearBothBtn.disabled = true;
+    try {
+      /* Cloud first. If it fails, local data is still here and the user can
+         retry — the reverse order would leave them with nothing local and a
+         cloud copy they were trying to delete. */
+      if (code) await deleteCloudCopy(code);
+      wipeLocalData();
+      if (code) { clearSyncCode(); refreshSyncUI(); setSyncStatus(''); }
+      render();
+      showToast('Cleared everywhere');
+    } catch (e) {
+      alert('Could not reach the sync server. Nothing was deleted.');
+    } finally {
+      clearBothBtn.disabled = false;
     }
   });
 
@@ -1049,17 +1363,36 @@
     refreshSyncUI();
   });
 
-  /* Two-way sync: whichever side — this device or the cloud — changed more
-     recently wins, and the other side is brought up to match. This runs on
-     every launch and whenever the app comes back into view (see the
-     visibilitychange listener below), which is what makes "open it on
-     another device" actually pick up what you last did elsewhere, not just
-     restore an empty one.
+  /* Two-way sync. This runs on every launch and whenever the app comes back
+     into view (see the visibilitychange listener below), which is what makes
+     "open it on another device" actually pick up what you last did elsewhere,
+     not just restore an empty one.
 
-     Deliberately no confirmation prompt here, unlike the manual "Restore by
-     code" flow — that's for deliberately adopting a code you typed in;
-     this is routine reconciliation of a device against its own code, which
-     needs to just happen for sync to feel automatic. */
+     ORDERING. This used to compare `cloud.updatedAt` against a local
+     timestamp and let the later one win. That is wrong in two ways that both
+     end with the older copy overwriting the newer:
+
+       1. The two timestamps come from two different wall clocks. A device a
+          few minutes fast always looks newer, so it wins even when it is
+          holding the older ledger — and a device a few minutes slow always
+          loses, so its genuinely newer edits get discarded on every launch.
+       2. A missing local timestamp used to be filled in with `now`, so a
+          device with STALE data and a lost timestamp key claimed to be freshly
+          edited and beat the real latest copy.
+
+     What orders them now is a version counter that only ever increases and
+     lives with the data in the cloud, so both sides read the same numbers off
+     the same source. `base` is the cloud version this device's data derives
+     from; `dirty` says whether there are local edits on top of it. That gives
+     four honest cases, including one the timestamp scheme could not express at
+     all — both sides moved — which must NOT be resolved by silently picking a
+     winner, because whichever side loses is destroyed. It is surfaced instead,
+     and the explicit Pull/Push buttons are the resolution.
+
+     No confirmation prompt on the routine paths, unlike "Restore by code" —
+     that's for deliberately adopting a code you typed in; this is a device
+     reconciling against its own code, which has to just happen for sync to
+     feel automatic. */
   let reconciling = false;
   async function reconcileWithCloud(manual) {
     const code = getSyncCode();
@@ -1069,29 +1402,117 @@
     if (manual) setSyncStatus('Syncing…');
     try {
       const cloud = await pullFromCloud(code);
-      const localAt = getLocalUpdatedAt();
-      const localTime = localAt ? new Date(localAt).getTime() : 0;
+      const base = getBaseVersion();
+      const dirty = isDirty();
 
       if (!cloud) {
-        // Nothing stored under this code yet — this device is the source.
-        await pushToCloud(code);
+        /* Nothing stored under this code — either it's brand new, or the cloud
+           copy was cleared. Only seed it from a device that actually has
+           something; pushing from an empty device would publish emptiness and
+           then every other device would faithfully adopt it. force, because
+           there is no version to be ahead of. */
+        if (localHasData()) {
+          await pushToCloud(code, { basedOn: 0, force: true });
+        } else if (manual) {
+          setSyncStatus('Nothing stored under this code yet');
+        }
         return;
       }
 
-      const cloudTime = cloud.updatedAt ? new Date(cloud.updatedAt).getTime() : 0;
-      if (cloudTime > localTime) {
-        applyCloudPayload(cloud);
-        showToast(`Synced ${cloud.entries.length} entries from your other device`);
-      } else if (localTime > cloudTime) {
-        await pushToCloud(code);
-      } else if (manual) {
-        setSyncStatus('Already up to date');
+      const cloudVersion = versionOf(cloud);
+
+      /* Bridge for a ledger last written by the pre-versioning build: it has no
+         version, and this device has no base, so both read 0 and the counters
+         cannot order them. Fall back to the old timestamp comparison for this
+         one reconcile — with the tie broken toward the cloud, since the local
+         side is the one whose timestamp may have been fabricated by the removed
+         `now` fallback — then adopt versions from here on. */
+      if (cloudVersion === 0 && base === 0 && !isVersionAdopted()) {
+        const localAt = getLocalUpdatedAt();
+        const localTime = localAt ? new Date(localAt).getTime() : 0;
+        const cloudTime = cloud.updatedAt ? new Date(cloud.updatedAt).getTime() : 0;
+        markVersionAdopted();
+        if (localTime > cloudTime && localHasData()) {
+          await pushToCloud(code, { basedOn: 0, force: true });
+        } else {
+          applyCloudPayload(cloud);
+          setBaseVersion(0);
+          showToast(`Synced ${cloudEntryCount(cloud)} entries from your other device`);
+        }
+        return;
       }
+      markVersionAdopted();
+
+      if (cloudVersion > base && dirty) {
+        /* Both sides moved. Neither can be applied without destroying the
+           other, and this is the exact situation the old code resolved by
+           coin-flip-on-clock-skew. Say so and stop. */
+        setSyncStatus('Conflict: this device and the cloud both have changes. ' +
+                      'Use "Pull from cloud" or "Push to cloud" to choose which to keep.');
+        showToast('Sync paused — both sides changed. Choose Pull or Push in settings.');
+        return;
+      }
+
+      if (cloudVersion > base) {
+        applyCloudPayload(cloud);
+        showToast(`Synced ${cloudEntryCount(cloud)} entries from your other device`);
+        return;
+      }
+
+      if (dirty) {
+        /* Base the claim on what the cloud just told us it has, not on our
+           stored base — if our base somehow ran ahead (a failed push that still
+           landed, a restored backup of localStorage), `base + 1` could collide
+           with a version the cloud already used. */
+        const result = await pushToCloud(code, { basedOn: cloudVersion });
+        if (result.status === 'conflict') {
+          /* The read above said the cloud was not ahead, the write says it is —
+             so that read was stale and there ARE changes on both sides. Do not
+             apply the winner: this device is dirty, and applying it would throw
+             away the very edits we came here to push. Same standoff as the
+             cloudVersion > base && dirty case, reached the long way round. */
+          setSyncStatus('Conflict: this device and the cloud both have changes. ' +
+                        'Use "Pull from cloud" or "Push to cloud" to choose which to keep.');
+          showToast('Sync paused — both sides changed. Choose Pull or Push in settings.');
+        }
+        return;
+      }
+
+      if (cloudVersion < base) {
+        /* We are ahead of what we can see, with nothing to push. Almost always
+           a stale read of an eventually-consistent store, so do nothing rather
+           than "correcting" the cloud back down to us. */
+        if (manual) setSyncStatus('Cloud copy looks older than this device — retry in a moment');
+        return;
+      }
+
+      if (manual) setSyncStatus('Already up to date');
     } catch (e) {
       setSyncStatus('Offline — showing what was last saved here');
     } finally {
       reconciling = false;
     }
+  }
+
+  /* A payload written by an old build has no entries array at all if it was
+     stored empty, and `cloud.entries.length` threw there — which aborted the
+     reconcile mid-way, after the data had already been applied. */
+  function cloudEntryCount(cloud) {
+    return Array.isArray(cloud && cloud.entries) ? cloud.entries.length : 0;
+  }
+
+  /* One-shot marker so the pre-versioning bridge above runs at most once per
+     device. Without it, a ledger legitimately sitting at version 0 would take
+     the timestamp path on every launch. */
+  const VERSION_ADOPTED_KEY = 'ledger_sync_versioned_v1';
+  function isVersionAdopted() {
+    try { return safeStorage.getItem(VERSION_ADOPTED_KEY) === '1'; } catch (e) { return false; }
+  }
+  function markVersionAdopted() {
+    try { safeStorage.setItem(VERSION_ADOPTED_KEY, '1'); } catch (e) {}
+  }
+  function clearVersionAdopted() {
+    try { safeStorage.removeItem(VERSION_ADOPTED_KEY); } catch (e) {}
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -3301,20 +3722,6 @@
       });
     }
   }
-
-  resetBtn.addEventListener('click', () => {
-    if (confirm('Delete all entries and repeats? This cannot be undone.')) {
-      // Drop any pending undo first — otherwise its closure would push a
-      // deleted entry back into the store we just cleared.
-      hideToast();
-      try { safeStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      try { safeStorage.removeItem(REPEATS_KEY); } catch (e) {}
-      invalidateCache();
-      repeatsCache = null;
-      showAllRows = false;
-      render();
-    }
-  });
 
   exportBtn.addEventListener('click', () => {
     const backup = {

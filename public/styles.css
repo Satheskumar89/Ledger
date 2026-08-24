@@ -1342,11 +1342,12 @@
     font-size: 14px;
   }
 
-  /* CAREFUL: this class styles two semantically opposite controls — "Clear
-     all data" (destructive) and "Help" (neutral, via .help-link). iOS colours
-     a destructive action red, so .help-link below MUST override it back to the
-     tint or the Help link turns red too. Underline dropped: iOS uses plain
-     tinted/red labels, never underlined ones. */
+  /* Only .help-link uses this now — the destructive "Clear all data" link it
+     also used to style was replaced by the three-target .backup-btn.danger row
+     below, since with sync on "clear my data" has to say WHICH copy. The red
+     default and the .help-link override back to the tint are both kept: the
+     base class is still the destructive one, so anything neutral added here
+     must opt out the way .help-link does. */
   .reset-link {
     display: block;
     width: 100%;
@@ -1380,6 +1381,19 @@
   }
   .backup-btn:active { background: var(--fill-press); }
   .backup-btn.full { width: 100%; }
+  /* Destructive variant: iOS tints the LABEL red and leaves the fill neutral
+     for a button sitting in a row of peers — a red-filled button at this size
+     reads as the primary action of the screen, which is the opposite of what
+     these are. */
+  .backup-btn.danger { color: var(--expense); }
+  /* Three to a row instead of two, so the labels need the smaller step to
+     avoid ellipsising on a narrow phone. */
+  .backup-btn.danger { font-size: var(--fs-subhead); }
+  .backup-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .backup-btn:disabled:active { background: var(--fill-track); }
 
   /* No accounts — a self-chosen code is the only key, so restoring after a
      wipe means either the URL (see setSyncCode's location.hash) or this
@@ -2595,7 +2609,11 @@
     .calc-cancel:hover,
     .help-close:hover,
     .rs-save:hover { opacity: 0.65; }
-    #resetBtn:hover { opacity: 0.65; }
+    /* Was #resetBtn, which no longer exists — the destructive control is now
+       the three-button .backup-btn.danger row, and .backup-btn:hover below
+       already covers it. :disabled excluded so the two cloud targets don't
+       offer feedback when there's no code to act on. */
+    .backup-btn.danger:not(:disabled):hover { background: var(--fill-press); }
     .calc-key:hover { background: var(--ios-fill-2); }
     .calc-add-btn:hover { opacity: 0.88; }
     .entry:hover .entry-content {
