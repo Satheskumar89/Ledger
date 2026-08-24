@@ -11,7 +11,7 @@
      leading slash only works in that last case. Bump ?v= whenever styles.css
      changes: index.html is always revalidated, so a new HTML then points at a
      new URL and the pair can't go out of sync in a cache. -->
-<link rel="stylesheet" href="styles.css?v=1">
+<link rel="stylesheet" href="styles.css?v=2">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%201024%22%3E%20%3Cstyle%3E%20.bg%7Bfill%3A%237C8B7A%7D.page%7Bfill%3A%23FAF8F3%7D.spine%7Bfill%3A%235C695A%7D.line%7Bfill%3A%238B9682%7D.coin%7Bfill%3A%234C7A5E%7D.mark%7Bstroke%3A%23FAF8F3%7D%20%40media%20%28prefers-color-scheme%3A%20dark%29%7B%20.bg%7Bfill%3A%239BAA98%7D.spine%7Bfill%3A%236E7C6C%7D.line%7Bfill%3A%23A3AE9B%7D.coin%7Bfill%3A%233E6B50%7D%20%7D%20%3C%2Fstyle%3E%20%3Crect%20width%3D%221024%22%20height%3D%221024%22%20rx%3D%22200%22%20class%3D%22bg%22%2F%3E%20%3CclipPath%20id%3D%22pg%22%3E%3Crect%20x%3D%22300%22%20y%3D%22210%22%20width%3D%22460%22%20height%3D%22620%22%20rx%3D%2234%22%2F%3E%3C%2FclipPath%3E%20%3Cg%20clip-path%3D%22url%28%23pg%29%22%3E%20%3Crect%20x%3D%22300%22%20y%3D%22210%22%20width%3D%22460%22%20height%3D%22620%22%20class%3D%22page%22%2F%3E%20%3Crect%20x%3D%22300%22%20y%3D%22210%22%20width%3D%2270%22%20height%3D%22620%22%20class%3D%22spine%22%2F%3E%20%3C%2Fg%3E%20%3Cg%20class%3D%22line%22%3E%20%3Crect%20x%3D%22430%22%20y%3D%22360%22%20width%3D%22260%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3Crect%20x%3D%22430%22%20y%3D%22460%22%20width%3D%22260%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3Crect%20x%3D%22430%22%20y%3D%22560%22%20width%3D%22260%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3Crect%20x%3D%22430%22%20y%3D%22660%22%20width%3D%22130%22%20height%3D%2226%22%20rx%3D%2213%22%2F%3E%20%3C%2Fg%3E%20%3Ccircle%20cx%3D%22720%22%20cy%3D%22800%22%20r%3D%22130%22%20class%3D%22coin%22%2F%3E%20%3Cpath%20d%3D%22M665%20805%20L705%20850%20L785%20745%22%20fill%3D%22none%22%20class%3D%22mark%22%20stroke-width%3D%2228%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
 <link rel="icon" type="image/png" sizes="32x32" media="(prefers-color-scheme: light)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAADWElEQVR4nN2W329URRTHzznz4+69u3R7t61tg9sftIXS8iOEYMKjrxrDH2CMf4A++Gz8D0hMfNdIfFQJvqkxxEQTIoGEAKFgW0GoxkRSxGV376+ZOT5cu1np7e7awgvn7d6ZOZ+Z75lzzuAHZ9+H52n0XL2/EADZe5iZCRGpzz6YmZl3A5BSZlmWxFHvaUppJWUhY0cAIlprNzcfzU5NLy8etSZFxIJ5DEi0em/t4eZDWcTYAcCAhI3Hf288ePDKsZOvvfo6cAooiqY6ALXwy61PPj8ni7z1koiZpZTWOedsErWpKBLMrLWnpCQsjlP/ICMAERFRoUSISEQ7Rbg/oGNEJKUEBuhQGADBWtd7YX8AMwPg7fXbN+/c8LTH7Lb2TkkaHzl09PjyqT2dABEBuD5ZD6vhU2FwzlWCCrAtvmADAnIbroZhbaJgwKUAvVQaWKK1WyvrK57SbksNQkzSdHH+8JHFE3sPMo+EI0vzS0KIjq88E2vhyF5PkOs7PjY5Pj5dNG7A7S0GuURrd39ev7+uleqWKM2yuem5g3PLz0AizyuF1VAKycyIiIiAYIwpeX4P7wMB8uNPvTwzVV/o+m1zMFgLRIIEw67KNfwrEdzfuLvxx4aSKjPZzP6Z8ZcmnbWeHzSjVmKyOE0UFbsaUCI0xsRx5JRLs9RYK6XMmD/79suL1y41o7avPZ9pojS0G0CeybP1A3MHlgAYANikzPDRhXNfXfquWt4nSDTaTUaIbTZbHn1Kq4F6MjMnWRJHjSRqtlsNILq2evPrKz+MVmue0q04OnXo2Htn3v6tsdkwsUDqJvQC5J0WERFJCaWlVlIpqZD0jV9XnbO592pQeeeNNy/fuY6IT7L4f0hU8n2ttTGm2X6Sxi1CBADLXLJsTBalycn55dNLJwLP/+bqj99f/ykcGt5+ZbHHyy4vBkIIrXRnJQNIokdxa+Wv35Hh3TNvWWc/PP/pUFBOrFnYN1bTZcOuk9l9WmberaI4gq5akDAEJEa8yp9R4+wXHyNiueTHJhv1ysMqsF3e+wA6RiSg+24gAOBMuaZJPM4iyw4ZxoLKfn8YtqXboKVi2zcDQD0IJ9yQYStRKBKW3fZsHrThFJphJxAlKWY2/1Xm2QAQgLdqyU71+h+rbZfk4wv5SwAAAABJRU5ErkJggg==">
 <link rel="icon" type="image/png" sizes="16x16" media="(prefers-color-scheme: light)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABhklEQVR4nJXSO0tcURAH8Jk559xd9951113YgJGIeVgECwUrW79AqpRJk08hdpbW+QoW6dIJooXapAgBiZWwiBDBBFdld+9j9875WywSH1fBKYf5nTkzDK+ur9Bzwj5MMfO9DIBiwMwA0iz7T0DEFLigAIhIt9uNytGXj5+H+XCErXV/z/9t7m7JzRt3QJplkQtn387dbttqnG3tb3uAC78kRvq9TvukbYzRPK/X6oErPzU0AGfdeFQVEVVfGQtV/eMAYGb12k9iI0Y1D5yzNngcMAMQlsAFRkRFWET9Ex1uwoiICEC1sMokwqzwTFwAmFlVO1edZr35emZ2/+DHr6PD7iCNXFnh+R4A4L2vhNH7d3Njlejbzve1ja9vJqenGi1O0jAoeUBuV1triSnu97IsTeLe3u+fy/NLn5Y/XCb9WAfCDCJ+eHzlUsmDnJijzmmlMTHIh8d/ThZfzBhiFA4dJwkRpUQvw4nT84tM84XWtCEBoXhLxpjRzQF4VW0Sce51VE1E10AiqLh2N1JGAAAAAElFTkSuQmCC">
@@ -1449,6 +1449,64 @@
     syncRepeatChip();
     showSheet();
   }
+  /* Drag-to-dismiss. The grabber at the top of each sheet promises this
+     gesture, and without it the promise is empty: the backdrop these overlays
+     listen on is only the 10px sliver above a flex:1 sheet, so Cancel is
+     effectively the sole way out on a phone.
+
+     Armed only from the sheet's own top strip. Lower down the vertical axis
+     belongs to something else — the scrolling help/repeat body, the tag strip,
+     the keypad — and stealing it there would break those. */
+  const SHEET_DRAG_ARM_PX = 64;
+  const SHEET_DISMISS_PX = 96;
+
+  function attachSheetDrag(sheet, onDismiss) {
+    if (!sheet) return;
+    let startY = 0, dy = 0, armed = false, dragging = false;
+
+    sheet.addEventListener('touchstart', (ev) => {
+      if (ev.touches.length !== 1) { armed = false; return; }
+      const top = sheet.getBoundingClientRect().top;
+      armed = (ev.touches[0].clientY - top) <= SHEET_DRAG_ARM_PX;
+      startY = ev.touches[0].clientY;
+      dy = 0;
+      dragging = false;
+    }, { passive: true });
+
+    sheet.addEventListener('touchmove', (ev) => {
+      if (!armed) return;
+      const move = ev.touches[0].clientY - startY;
+      // Downward only: an upward drag from the header isn't a dismissal.
+      if (!dragging) {
+        if (move <= 6) return;
+        dragging = true;
+        sheet.style.transition = 'none';
+      }
+      dy = Math.max(0, move);
+      sheet.style.transform = `translateY(${dy}px)`;
+      if (ev.cancelable) ev.preventDefault();
+    }, { passive: false });
+
+    function end() {
+      if (!armed) return;
+      armed = false;
+      if (!dragging) return;
+      dragging = false;
+      const dismiss = dy > SHEET_DISMISS_PX;
+      /* Restore the CSS transition, then hand the transform back to CSS. Order
+         matters on dismissal: onDismiss() drops .open first so the class-driven
+         target is already translateY(100%), and clearing the inline transform
+         then animates from wherever the finger left it straight out. Clearing
+         first would animate back to 0 and only then slide away. */
+      sheet.style.transition = '';
+      if (dismiss) onDismiss();
+      sheet.style.transform = '';
+      dy = 0;
+    }
+    sheet.addEventListener('touchend', end);
+    sheet.addEventListener('touchcancel', end);
+  }
+
   /* Matches the .calc-sheet transform duration. */
   const SHEET_MS = 300;
 
@@ -1529,6 +1587,7 @@
   helpOverlay.addEventListener('click', (e) => {
     if (e.target === helpOverlay) closeHelp();
   });
+  attachSheetDrag(helpOverlay.querySelector('.help-sheet'), closeHelp);
 
   /* ---- Keyboard-aware overlay -----------------------------------------
      iOS shrinks the visual viewport but not the layout viewport, so a
@@ -1642,6 +1701,7 @@
   calcOverlay.addEventListener('click', (e) => {
     if (e.target === calcOverlay) closeCalculator();
   });
+  attachSheetDrag(calcOverlay.querySelector('.calc-sheet'), closeCalculator);
 
   calcAddBtn.addEventListener('click', () => {
     const amount = parseFloat(calcValue);
@@ -2100,7 +2160,11 @@
       dragging = true;
       decided = false;
       horizontal = false;
-      row.classList.add('swiping');
+      /* .swiping is NOT added here. It sets opacity:1 on both action panels, so
+         adding it on touchstart revealed Edit/Delete on a plain tap — they were
+         only hidden by .entry-content painting over them, which stops being
+         true the moment anything makes that cover translucent. The class now
+         waits until the gesture is known to be horizontal, below. */
     }, { passive: true });
 
     row.addEventListener('touchmove', (ev) => {
@@ -2114,9 +2178,10 @@
         horizontal = Math.abs(moveX) > Math.abs(moveY);
         if (!horizontal) {
           dragging = false;
-          row.classList.remove('swiping');
           return;
         }
+        // Only now is this a swipe, so only now do the actions appear.
+        row.classList.add('swiping');
       }
       if (!horizontal) return;
 
@@ -2805,6 +2870,13 @@
       closeRepeatSheet();
       syncRepeatChip();
     }
+  });
+  /* Same semantics as the backdrop above, including dropping an unsaved new
+     draft — dragging the sheet away is a cancel, not a save. */
+  attachSheetDrag(repeatOverlay.querySelector('.sheet-panel'), () => {
+    if (rsMode === 'new') rsDraft = null;
+    closeRepeatSheet();
+    syncRepeatChip();
   });
 
   /* ---- The repeat chip in the calculator -------------------------------- */

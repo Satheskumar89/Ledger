@@ -873,8 +873,18 @@
   .entry.open-right .entry-content { will-change: transform; }
   .entry.swiping .entry-content { transition: none; }
   /* The list had no touch highlight at all — only a hover rule, which a phone
-     never sees. iOS cells highlight on press. */
-  .entry-content:active { background: var(--fill-press); }
+     never sees. iOS cells highlight on press.
+
+     MUST STAY OPAQUE. --fill-press is a translucent iOS fill, and
+     .entry-content is the cover that hides .entry-actions / .entry-actions-left
+     behind it (see the "backstop" note on .entry). Assigning the translucent
+     fill to `background` REPLACED the opaque --card and made Edit/Delete show
+     straight through on any tap. Layering it as a background-image over an
+     opaque background-color keeps the same colour and stays opaque. */
+  .entry-content:active {
+    background-color: var(--card);
+    background-image: linear-gradient(var(--fill-press), var(--fill-press));
+  }
   /* iOS separators start at the TEXT, not the cell edge — and a border can't
      be inset, hence the pseudo-element. It lives on .entry-content rather than
      .entry so it travels with the row during a swipe, which is what iOS does.
@@ -1875,10 +1885,16 @@
     transform: translateY(100%);
     transition: transform 0.3s var(--ease-sheet);
   }
-  /* The grabber. Deliberately NOT on .sheet-overlay.anchored's panel: that's
-     the fork chooser, i.e. an iOS action sheet, and action sheets have no
-     grabber — plus that panel scrolls, which would carry an absolute
-     pseudo-element away with it. */
+  /* The grabber. Shown ONLY on touch devices, because it is an affordance for
+     the drag-to-dismiss gesture wired up in attachSheetDrag — and that gesture
+     is touch-only. Drawing it for a mouse user promises something they cannot
+     do; their ways out are Cancel, Escape, and the backdrop.
+
+     Deliberately NOT on .sheet-overlay.anchored's panel: that's the fork
+     chooser, i.e. an iOS action sheet, and action sheets have no grabber —
+     plus that panel scrolls, which would carry an absolute pseudo-element
+     away with it. */
+  @media (hover: none) and (pointer: coarse) {
   .calc-sheet::before,
   .help-sheet::before,
   .sheet-overlay:not(.anchored) .sheet-panel::before {
@@ -1893,6 +1909,7 @@
     background: var(--grabber);
     z-index: 1;
     pointer-events: none;
+  }
   }
   .help-overlay.open .help-sheet,
   .sheet-overlay.open .sheet-panel { transform: translateY(0); }
@@ -2513,7 +2530,10 @@
     #resetBtn:hover { opacity: 0.65; }
     .calc-key:hover { background: var(--ios-fill-2); }
     .calc-add-btn:hover { opacity: 0.88; }
-    .entry:hover .entry-content { background: var(--fill-press); }
+    .entry:hover .entry-content {
+      background-color: var(--card);
+      background-image: linear-gradient(var(--fill-press), var(--fill-press));
+    }
     .tag-chip:not(.active):hover { background: var(--ios-fill-2); }
     .date-btn:hover { background: var(--ios-fill-2); }
 
