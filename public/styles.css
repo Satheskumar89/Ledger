@@ -135,12 +135,17 @@
        Both themes carry some tint so a tile reads as belonging to its
        category; light just leans on the shadow for the edge. */
     --tile-bg: var(--card);
-    /* Kept low on purpose. At 10%+ the muted hues turn muddy — Utilities went
-       beige, Other went plain grey — and ten pastel blocks fight the icon
-       chips, which are the actual category signal. This is a hint. */
-    --tile-tint: 5%;
-    --tile-tint-active: 14%;
-    --tile-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+    /* No resting tint in light, deliberately. A fixed percentage of ten hues
+       with very different lightness reads UNEVEN over white — Dining and Health
+       came out clearly peach and pink while Utilities and Other stayed almost
+       white — and evening that out would mean ten hand-tuned numbers. The
+       shadow already separates the tile from the page here (that is the whole
+       reason light uses elevation), so the surface can just be the card colour
+       and the icon chip carries the identity. The press state below still
+       tints, so a tap reads in the category's own colour. */
+    --tile-tint: 0%;
+    --tile-tint-active: 10%;
+    --tile-shadow: 0 1px 3px rgba(0, 0, 0, 0.09), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
     --page-surround: var(--ios-gray-4);    /* desktop frame only */
     --cat-fg: #FFFFFF;                     /* glyph on a category fill */
     /* Calendar heatmap tint strengths. Tokenized rather than media-queried:
@@ -1467,10 +1472,21 @@
     display: flex;
     flex-direction: column;
   }
+  /* A real iOS nav bar: leading control, centred title, trailing group. It has
+     to be a grid rather than flex because the date and repeat chips are BOTH
+     hidden when confirming a repeat occurrence — under space-between that flung
+     the category label to the far right edge, and under flex-start with auto
+     margins it still drifted, because that centres it in the space left over
+     after Cancel rather than in the row. Two equal 1fr side columns keep the
+     title centred no matter how many trailing chips exist.
+
+     minmax(0, auto) on the middle column, not plain auto: a grid `auto` track
+     won't shrink below min-content, so a long category name would push the
+     trailing chips off a narrow screen instead of ellipsising. */
   .calc-top {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, auto) 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
     flex: 0 0 auto;
     /* Clears the sheet grabber above it. */
@@ -1479,7 +1495,14 @@
     padding-right: max(16px, env(safe-area-inset-right));
     padding-bottom: 8px;
   }
+  .calc-top-trailing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-self: end;
+  }
   .calc-cancel {
+    justify-self: start;
     background: none;
     border: none;
     color: var(--accent-text);
@@ -1495,7 +1518,9 @@
     align-items: center;
     gap: 8px;
     min-width: 0;
-    flex: 0 1 auto;
+    /* Content-sized on purpose: #calcCatSelect is laid over this box invisibly,
+       so widening it would widen the picker's hit area for nothing. */
+    justify-self: center;
     min-height: 44px;
     font-size: 16px;
     color: var(--ink-soft);
@@ -1974,7 +1999,7 @@
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 4px max(20px, env(safe-area-inset-left)) calc(40px + env(safe-area-inset-bottom));
+    padding: 14px max(20px, env(safe-area-inset-left)) calc(40px + env(safe-area-inset-bottom));
   }
   .help-section { padding: 20px 0; border-bottom: 1px solid var(--hairline); }
   .help-section:last-child { border-bottom: none; }
@@ -2271,7 +2296,7 @@
   .rate-dot.future { background: var(--card); border: 1.5px solid var(--accent); }
   .rate-line { flex: 1; width: 1px; background: var(--hairline); margin-top: 4px; }
   .rate-body { flex: 1; min-width: 0; }
-  .rate-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .rate-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .rate-amount { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
   .rate-when { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
   .rate-tag {
@@ -2283,19 +2308,24 @@
     letter-spacing: var(--tr-11);
   }
   .rate-tag.now { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent-text); }
-  .rate-tag.later { border: 1px solid var(--accent); color: var(--accent-text); }
+  /* Pending, so it stays neutral — "In effect" above is the tinted one. */
+  .rate-tag.later { background: var(--fill-track); color: var(--ink-soft); }
 
   /* The rate list is a small editable table rather than a row that opens yet
      another keypad — two native fields per rate keeps the whole history
      visible while you change one figure in it. */
+  /* These three were missed when every other field went borderless. In dark the
+     old `background: var(--card)` was #1C1C1E sitting on a #1C1C1E sheet, so a
+     1px stroke was the only thing defining them — they read as floating
+     outlines rather than as fields. */
   .rate-amount-input {
     min-width: 0;
     flex: 1;
     height: 38px;
     padding: 0 10px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
+    border: none;
+    border-radius: var(--r-control);
+    background: var(--fill-track);
     color: var(--ink);
     font-family: inherit;
     font-size: 16px;
@@ -2317,10 +2347,10 @@
     flex: 1;
     min-width: 0;
     height: 34px;
-    padding: 0 8px;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--r-control);
+    background: var(--fill-track);
     color: var(--ink);
     font-family: inherit;
     font-size: 15px;
@@ -2332,10 +2362,11 @@
     width: 34px;
     height: 34px;
     padding: 0;
-    border: 1px solid var(--hairline);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--ink-soft);
+    border: none;
+    border-radius: var(--r-control);
+    background: var(--fill-track);
+    /* It removes a scheduled amount, so it reads as destructive. */
+    color: var(--expense);
     display: flex;
     align-items: center;
     justify-content: center;
