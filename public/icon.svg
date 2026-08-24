@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Scalable favicon for browser tabs. Geometry matches apple-touch-icon.png,
+       which is generated from the same numbers. Keep the two in step.
+
+       Unlike the Home Screen icon, this one CAN adapt to the tab strip's theme,
+       so the ground brightens slightly in dark to match the dark systemBlue.
+       That is polish, not a fix: the ground is saturated enough to read either
+       way. (Note for editors: XML comments cannot contain a double hyphen, so
+       CSS custom property names are spelled out in words here.) -->
+  <style>
+    .bg    { fill: #007AFF }
+    .spine { fill: #0052C2 }
+    .page  { fill: #FFFFFF }
+    .rule  { fill: #A7CDFA }
+    .coin  { fill: #34C759 }
+    .check { stroke: #FFFFFF }
+    @media (prefers-color-scheme: dark) {
+      .bg    { fill: #0A84FF }
+      .spine { fill: #0060DF }
+      .rule  { fill: #B6D6FB }
+      .coin  { fill: #30D158 }
+    }
+  </style>
+
+  <!-- Full bleed, square. No rounded corners in the artwork: every consumer
+       that wants them applies its own mask. -->
+  <rect width="1024" height="1024" class="bg"/>
+
+  <!-- The ledger page, bound down its left edge. -->
+  <rect x="250" y="180" width="540" height="678" rx="44" class="page"/>
+  <path d="M294 180h72v678h-72a44 44 0 0 1-44-44V224a44 44 0 0 1 44-44z" class="spine"/>
+
+  <!-- Three thick rules rather than four thin ones, so they survive 60pt. -->
+  <rect x="424" y="330" width="302" height="50" rx="25" class="rule"/>
+  <rect x="424" y="468" width="302" height="50" rx="25" class="rule"/>
+  <rect x="424" y="606" width="302" height="50" rx="25" class="rule"/>
+  <rect x="424" y="744" width="154" height="50" rx="25" class="rule"/>
+
+  <!-- Confirmed-entry coin, overlapping the page corner for depth. -->
+  <circle cx="758" cy="758" r="192" class="coin"/>
+  <path d="M648 762l90 90 134-180" fill="none" class="check"
+        stroke-width="62" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
