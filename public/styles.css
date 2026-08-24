@@ -324,13 +324,20 @@
       --overlay-dim: rgba(0, 0, 0, 0.48);
       --grabber: rgba(235, 235, 245, 0.30);
       --page-surround: #000000;
-      /* Dark keeps --tile-bg on --card so the tiles match the list cards.
-         24% read as solid coloured slabs — far too heavy — so the tint drops to
-         a hint here too, and the edge comes from a faint inset hairline
-         instead. A drop shadow can't do that job against #000. */
-      --tile-tint: 10%;
-      --tile-tint-active: 20%;
-      --tile-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      /* No resting tint here either, matching light — so a tile is plain --card
+         in BOTH themes and the grid reads the same way on either. The filled
+         category glyphs carry the identity; earlier attempts at 24% and then
+         10% put it on the surface as well, which made dark look like ten
+         coloured slabs while light was calm and white.
+
+         Only the SEPARATION mechanism differs by theme, and it has to: light
+         uses a drop shadow (there is nowhere lighter to go than a white card on
+         a near-white page), dark uses a faint inset hairline, because a shadow
+         cannot draw an edge against #000. The press state still tints in the
+         category's own colour in both. */
+      --tile-tint: 0%;
+      --tile-tint-active: 18%;
+      --tile-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
       /* Dark grounds need more tint to read at all. */
       --tint-1: 14%;
       --tint-2: 26%;
