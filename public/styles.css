@@ -2137,15 +2137,19 @@
   .due-open:active { background: var(--fill-press); }
   .due-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
   .due-text { display: flex; flex-direction: column; min-width: 0; }
+  /* Matches .rule-name / .entry-desc / .cat-row-name — 'Waiting for you' is
+     the same row shape as 'Next 30 days' and 'All repeats' below it, so its
+     type has to agree with theirs. */
   .due-desc {
-    font-size: 15px;
+    font-size: var(--fs-body);
+    letter-spacing: var(--tr-17);
     color: var(--ink);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .due-meta {
-    font-size: 13px;
+    font-size: var(--fs-footnote);
     color: var(--ink-soft);
     margin-top: 1px;
     overflow: hidden;
@@ -2157,11 +2161,11 @@
      yet, and colouring it like a real outgoing overstates what's happened. */
   .due-amount {
     font-variant-numeric: tabular-nums;
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--fs-body);
+    font-weight: 400;
     color: var(--ink);
   }
-  .due-amount.est { font-weight: 400; color: var(--ink-soft); }
+  .due-amount.est { color: var(--ink-soft); }
   /* One tap to confirm a fixed amount. Still an explicit confirmation, just
      not one that makes you retype a number you already know. */
   .due-confirm {
@@ -2210,10 +2214,12 @@
     align-items: center;
     justify-content: center;
   }
-  .rule-name { font-size: 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
-  .rule-meta { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
-  .rule-amount { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; flex-shrink: 0; }
-  .rule-amount.est { font-weight: 400; color: var(--ink-soft); }
+  /* Matches .entry-desc / .cat-row-name — Entries, Category and Repeats are
+     the same row shape across three tabs, so their type has to agree. */
+  .rule-name { font-size: var(--fs-body); letter-spacing: var(--tr-17); color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
+  .rule-meta { font-size: var(--fs-footnote); color: var(--ink-soft); margin-top: 1px; }
+  .rule-amount { font-variant-numeric: tabular-nums; font-size: var(--fs-body); font-weight: 400; flex-shrink: 0; }
+  .rule-amount.est { color: var(--ink-soft); }
   .pill {
     padding: 1px 6px;
     border-radius: 999px;
