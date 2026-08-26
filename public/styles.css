@@ -1793,6 +1793,9 @@
     /* Keeps the "this region is a keyboard" read without drawing the grid. */
     border-top: 1px solid var(--hairline);
   }
+  /* Hidden while the memo field holds native focus, so the on-screen
+     keypad and iOS's own keyboard never stack on top of each other. */
+  .calc-keypad[hidden] { display: none; }
   /* Tabular figures so the 12-key grid stays on one optical baseline and the
      digits don't shift width between states. */
   .calc-key {

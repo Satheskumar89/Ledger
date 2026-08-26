@@ -1785,7 +1785,12 @@
     calcMemoRow.hidden = true;
     calcDesc.blur();
   }
+  // The memo field's native keyboard and the custom amount keypad both
+  // live in the same sheet, so only one can be on screen at a time or
+  // they stack on top of each other (seen on iOS).
+  calcDesc.addEventListener('focus', () => { calcKeypad.hidden = true; });
   calcDesc.addEventListener('blur', () => {
+    calcKeypad.hidden = false;
     const v = calcDesc.value.trim();
     if (addingTag) {
       // Whether a tag was created or the user backed out empty-handed, the
