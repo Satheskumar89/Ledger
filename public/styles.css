@@ -152,7 +152,7 @@
     --tile-tint-active: 10%;
     --tile-shadow: 0 1px 3px rgba(0, 0, 0, 0.09), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
     --page-surround: var(--ios-gray-4);    /* desktop frame only */
-    --cat-fg: #FFFFFF;                     /* glyph on a category fill */
+    --icon-tint: 18%;                      /* category glyph chip's background wash */
     /* Calendar heatmap tint strengths. Tokenized rather than media-queried:
        dark grounds need more tint than light ones, and adding a media query
        near the .day rules would fight this file's existing, order-sensitive
@@ -168,23 +168,20 @@
 
     /* ---- Layer 2c: category identity ----------------------------------
        Ten hues, drawn from the iOS system families, with a light/dark pair
-       each. The glyph inside is stroke="currentColor" over --cat-fg (white),
-       so these are FILLS that have to carry a white glyph — which is why they
-       are not simply Apple's light/dark pairs:
+       each. The glyph inside is stroke="currentColor" over the hue itself —
+       the icon chip's background is only a soft wash of it (see --icon-tint
+       and the .tile-icon rule below), the Settings.app / Health.app move,
+       not a solid fill with a white glyph. That's still why light and dark
+       aren't simply Apple's light/dark pairs:
 
-         light = Apple's increased-contrast variants (white glyph 4.4-8:1)
-         dark  = Apple's STANDARD light variants, one step lighter so the chip
-                 doesn't vanish into #1C1C1E. White then lands at ~2.2-3.5:1,
-                 which is exactly what iOS Settings.app itself ships (its grey
-                 "General" chip is 2.6:1) and is acceptable only because the
-                 glyph is redundant to the label right beside it.
-
-       Using Apple's *dark* variants as fills would be wrong: they're tuned for
-       tint-on-dark-ground (i.e. as text), and white on #30D158 is 2.2:1.
+         light = Apple's increased-contrast variants. They're dark enough to
+                 sit as a glyph over a pale tint of themselves or over --card.
+         dark  = Apple's STANDARD light variants, exactly as iOS itself uses
+                 them as a tint/glyph colour over a dark ground.
 
        Two deliberate substitutions:
-         - Utilities avoids systemYellow entirely. White on #FFCC00 is ~1.3:1,
-           genuinely unreadable. systemBrown matches the old #8B6C4C anyway.
+         - Utilities avoids systemYellow entirely — too washed out at glyph
+           weight. systemBrown matches the old #8B6C4C anyway.
          - Grocery moves off green to systemMint, so green is free for Income.
            Money means green; two greens in a ten-swatch set was a collision
            the previous palette already had. */
@@ -197,9 +194,9 @@
     --cat-education: #3634A3;   /* indigo */
     --cat-leisure:   #008299;   /* teal   */
     --cat-other:     #6C6C70;   /* gray   */
-    /* Intentionally NOT --income-fill: this one is an icon-chip fill that must
-       carry a white glyph, that one is a status colour for text and tints.
-       Same fill/text split as --accent vs --accent-text. */
+    /* Intentionally NOT --income-fill: this one is an icon-chip identity
+       colour, that one is a status colour for text and tints. Same fill/text
+       split as --accent vs --accent-text. */
     --cat-income:    #248A3D;   /* green  */
 
     /* ---- Layer 3: type ------------------------------------------------
@@ -342,8 +339,8 @@
       --key-bg: var(--ios-bg-3);
       --sh-key: none;
       /* No resting tint here either, matching light — so a tile is plain --card
-         in BOTH themes and the grid reads the same way on either. The filled
-         category glyphs carry the identity; earlier attempts at 24% and then
+         in BOTH themes and the grid reads the same way on either. The category
+         glyph chips carry the identity; earlier attempts at 24% and then
          10% put it on the surface as well, which made dark look like ten
          coloured slabs while light was calm and white.
 
@@ -359,9 +356,11 @@
       --tint-1: 14%;
       --tint-2: 26%;
       --tint-3: 40%;
+      --icon-tint: 24%;
 
-      /* See the light block: these are Apple's STANDARD light variants, not
-         the dark ones, because they carry a white glyph. */
+      /* See the light block: these are Apple's STANDARD light variants, used
+         directly as the glyph/tint colour over a dark ground — exactly how
+         iOS itself uses them. */
       --cat-grocery:   #00C7BE;
       --cat-dining:    #FF9500;
       --cat-health:    #FF2D55;
@@ -818,7 +817,7 @@
   /* Rounded squares, not circles — the Settings.app icon-chip form, and the
      single strongest "this is iOS" signal in the app. Kept consistent across
      all four sizes: .tile-icon 8, .calc-cat's 6, .entry-dot 7, .rule-dot 6.
-     The glyph stays white in both themes; see --cat-fg. */
+     Background and glyph colour come from the shared [data-cat] rule below. */
   .tile-icon {
     width: 34px;
     height: 34px;
@@ -826,7 +825,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--cat-fg);
     flex-shrink: 0;
   }
   .tile-label {
@@ -856,8 +854,8 @@
   /* Category colour is driven by a data-cat attribute rather than an inline
      background, so the whole palette re-resolves on a live light/dark flip
      with zero JS. Writing a hex inline would leave every chip stale until the
-     next render(). --cat is inherited, so a future tinted-row treatment can
-     read it for free. */
+     next render(). --cat is inherited, so anything under a [data-cat]
+     ancestor can read it for free. */
   [data-cat="grocery"]   { --cat: var(--cat-grocery); }
   [data-cat="dining"]    { --cat: var(--cat-dining); }
   [data-cat="health"]    { --cat: var(--cat-health); }
@@ -869,10 +867,19 @@
   [data-cat="other"]     { --cat: var(--cat-other); }
   [data-cat="income"]    { --cat: var(--cat-income); }
   /* The fallback covers a missing or unrecognised slug — an old backup, or a
-     category renamed since (see RENAMED_CATEGORIES). */
+     category renamed since (see RENAMED_CATEGORIES).
+
+     Icon chips (.tile-icon / .entry-dot / .rule-dot) are the Settings.app /
+     Health.app treatment: a coloured glyph over a soft wash of its own hue,
+     not a solid fill with a white glyph — easier on the eyes, especially the
+     brighter dark-mode hues. .cat-bar-fill is a real data bar (spend-share),
+     not a glyph chip, so it stays a solid fill for legibility at a glance. */
   .tile-icon,
   .entry-dot,
-  .rule-dot,
+  .rule-dot {
+    background: color-mix(in srgb, var(--cat, var(--cat-other)) var(--icon-tint), var(--tile-bg));
+    color: var(--cat, var(--cat-other));
+  }
   .cat-bar-fill { background: var(--cat, var(--cat-other)); }
 
   /* Swipe-to-delete: .entry is the clipping track, .entry-content slides over
@@ -1001,7 +1008,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--cat-fg);
   }
   .entry-text { display: flex; flex-direction: column; min-width: 0; }
   .entry-desc {
@@ -2203,7 +2209,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--cat-fg);
   }
   .rule-name { font-size: 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
   .rule-meta { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
