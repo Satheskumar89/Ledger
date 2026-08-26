@@ -669,7 +669,7 @@
     margin: 0 0 8px;
   }
   .balance-amount {
-    font-size: 40px;
+    font-size: 36px;
     font-weight: 700;
     letter-spacing: var(--tr-34);
     line-height: 1;
@@ -895,8 +895,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 12px 16px;
-    min-height: 62px;
+    padding: 10px 16px;
+    min-height: 56px;
     background: var(--card);
     transform: translate3d(0, 0, 0);
     transition: transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1),
@@ -1011,8 +1011,11 @@
   }
   .entry-text { display: flex; flex-direction: column; min-width: 0; }
   .entry-desc {
-    font-size: var(--fs-body);
-    letter-spacing: var(--tr-17);
+    /* 14px isn't one of Apple's named text styles (--fs-* jumps 13 -> 15),
+       so there's no published tracking value either — interpolated between
+       --tr-13 and --tr-15 rather than reusing an adjacent size's number. */
+    font-size: 14px;
+    letter-spacing: -0.15px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1021,8 +1024,8 @@
      Utilities') used to wrap and make that one row taller than its
      neighbours, so row heights rippled with the day of the month. */
   .entry-meta {
-    font-size: var(--fs-subhead);
-    letter-spacing: var(--tr-15);
+    font-size: var(--fs-footnote);
+    letter-spacing: var(--tr-13);
     color: var(--ink-soft);
     margin-top: 1px;
     overflow: hidden;
@@ -1032,7 +1035,7 @@
   .entry-right { display: flex; align-items: center; flex-shrink: 0; }
   .entry-amount {
     font-variant-numeric: tabular-nums;
-    font-size: var(--fs-body);
+    font-size: var(--fs-subhead);
     /* iOS list values are regular weight; the colour already carries the
        polarity, so extra weight only made the column shout. */
     font-weight: 400;
@@ -1214,7 +1217,7 @@
     justify-content: space-between;
     gap: 8px;
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px 16px;
     border: none;
     background: none;
     font-family: inherit;
@@ -1230,11 +1233,11 @@
     justify-content: space-between;
     gap: 10px;
   }
-  .cat-row-name { font-size: var(--fs-body); letter-spacing: var(--tr-17); color: var(--ink); }
-  .cat-row-count { font-size: var(--fs-footnote); color: var(--ink-soft); margin-top: 1px; }
+  .cat-row-name { font-size: 14px; letter-spacing: -0.15px; color: var(--ink); }
+  .cat-row-count { font-size: var(--fs-footnote); letter-spacing: var(--tr-13); color: var(--ink-soft); margin-top: 1px; }
   .cat-row-amount {
     font-variant-numeric: tabular-nums;
-    font-size: var(--fs-body);
+    font-size: var(--fs-subhead);
     font-weight: 400;
   }
   .cat-chevron {
@@ -1524,6 +1527,15 @@
     display: flex;
     flex-direction: column;
   }
+  /* The memo field's native keyboard replaces the on-screen keypad (see
+     .calc-keypad[hidden] below) rather than stacking under it, which frees
+     up .calc-bottom's fixed 56% share — far more than the tag row + Add
+     button need on their own. Left alone, that surplus sits as a dead void
+     between the button and the keyboard. Flipping the flex roles lets the
+     amount display absorb it instead, so the button stays flush just above
+     the keyboard, the way a native text field does. */
+  .calc-overlay.keyboard-mode .calc-top-half { flex: 1 1 auto; }
+  .calc-overlay.keyboard-mode .calc-bottom { flex: 0 0 auto; }
   /* A real iOS nav bar: leading control, centred title, trailing group. It has
      to be a grid rather than flex because the date and repeat chips are BOTH
      hidden when confirming a repeat occurrence — under space-between that flung
@@ -2126,8 +2138,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 11px 8px 11px 16px;
-    min-height: 66px;
+    padding: 9px 8px 9px 16px;
+    min-height: 60px;
     border: none;
     background: none;
     font-family: inherit;
@@ -2141,8 +2153,8 @@
      the same row shape as 'Next 30 days' and 'All repeats' below it, so its
      type has to agree with theirs. */
   .due-desc {
-    font-size: var(--fs-body);
-    letter-spacing: var(--tr-17);
+    font-size: 14px;
+    letter-spacing: -0.15px;
     color: var(--ink);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2150,6 +2162,7 @@
   }
   .due-meta {
     font-size: var(--fs-footnote);
+    letter-spacing: var(--tr-13);
     color: var(--ink-soft);
     margin-top: 1px;
     overflow: hidden;
@@ -2161,7 +2174,7 @@
      yet, and colouring it like a real outgoing overstates what's happened. */
   .due-amount {
     font-variant-numeric: tabular-nums;
-    font-size: var(--fs-body);
+    font-size: var(--fs-subhead);
     font-weight: 400;
     color: var(--ink);
   }
@@ -2195,8 +2208,8 @@
     justify-content: space-between;
     gap: 10px;
     width: 100%;
-    padding: 10px 16px;
-    min-height: 58px;
+    padding: 9px 16px;
+    min-height: 54px;
     border: none;
     background: none;
     font-family: inherit;
@@ -2216,9 +2229,9 @@
   }
   /* Matches .entry-desc / .cat-row-name — Entries, Category and Repeats are
      the same row shape across three tabs, so their type has to agree. */
-  .rule-name { font-size: var(--fs-body); letter-spacing: var(--tr-17); color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
-  .rule-meta { font-size: var(--fs-footnote); color: var(--ink-soft); margin-top: 1px; }
-  .rule-amount { font-variant-numeric: tabular-nums; font-size: var(--fs-body); font-weight: 400; flex-shrink: 0; }
+  .rule-name { font-size: 14px; letter-spacing: -0.15px; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
+  .rule-meta { font-size: var(--fs-footnote); letter-spacing: var(--tr-13); color: var(--ink-soft); margin-top: 1px; }
+  .rule-amount { font-variant-numeric: tabular-nums; font-size: var(--fs-subhead); font-weight: 400; flex-shrink: 0; }
   .rule-amount.est { color: var(--ink-soft); }
   .pill {
     padding: 1px 6px;
@@ -2675,13 +2688,13 @@
       background: var(--paper);
       padding: 40px 32px 64px;
     }
-    .balance-amount { font-size: 46px; }
+    .balance-amount { font-size: 42px; }
     .tile-grid { gap: 12px; }
     .tile { min-height: 96px; }
     .tile.wide { min-height: 64px; }
     .tile-label { font-size: 13px; }
     .tile.wide .tile-label { font-size: 14px; }
-    .entry-content { min-height: 64px; }
+    .entry-content { min-height: 58px; }
   }
 
   /* On a pointer device the full-screen keypad takeover feels wrong;

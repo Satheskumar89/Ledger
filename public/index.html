@@ -1788,9 +1788,19 @@
   // The memo field's native keyboard and the custom amount keypad both
   // live in the same sheet, so only one can be on screen at a time or
   // they stack on top of each other (seen on iOS).
-  calcDesc.addEventListener('focus', () => { calcKeypad.hidden = true; });
+  calcDesc.addEventListener('focus', () => {
+    calcKeypad.hidden = true;
+    // Without the keypad, .calc-bottom's fixed 56% share is far more than
+    // the tag row + Add button need, which left a dead void between them
+    // and the keyboard. keyboard-mode lets the amount display claim that
+    // space instead, so the button stays flush above the keyboard.
+    calcOverlay.classList.add('keyboard-mode');
+    scheduleViewportResync();
+  });
   calcDesc.addEventListener('blur', () => {
     calcKeypad.hidden = false;
+    calcOverlay.classList.remove('keyboard-mode');
+    scheduleViewportResync();
     const v = calcDesc.value.trim();
     if (addingTag) {
       // Whether a tag was created or the user backed out empty-handed, the
@@ -2069,6 +2079,21 @@
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', syncOverlayViewport);
     window.visualViewport.addEventListener('scroll', syncOverlayViewport);
+  }
+  /* Focusing the memo field is what actually triggers the keyboard, but iOS
+     doesn't always fire a visualViewport 'resize' the moment it appears —
+     the AutoFill/QuickType suggestion bar above the keyboard can slide in a
+     beat after the keyboard itself, settling the visual viewport to a
+     SMALLER height than the first resize event reported. Without a re-check,
+     the overlay locks to that first (too-tall) reading and the sheet's
+     bottom edge stops short of the keyboard, leaving a gap that shows the
+     page underneath — seen on iPhone 15 as the category tiles peeking
+     through above the keyboard. Re-running the sync a few times over the
+     next half second catches that late settle without needing to guess its
+     exact timing. */
+  function scheduleViewportResync() {
+    syncOverlayViewport();
+    [50, 150, 300, 500].forEach(ms => setTimeout(syncOverlayViewport, ms));
   }
 
   // Let the keyboard's Done key dismiss itself rather than submitting.
