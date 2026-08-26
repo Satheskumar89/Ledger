@@ -559,9 +559,9 @@
        height from the calendar on the front and .balance-flip's overflow:hidden
        clips anything taller. A 4-row month is the shallowest front face there
        is — Feb 2026 is the only one this decade, and it is reachable from
-       today — giving about 168px. Contents here come to ~152px, or ~158px on
-       desktop where .balance-amount grows to 46px. At the old 26px padding the
-       desktop case clipped by 6px. Re-run the sum before adding a line. */
+       today — giving about 168px. Contents here come to ~143px, or ~149px on
+       desktop where .balance-amount grows to 34px. Re-run the sum before
+       adding a line. */
     padding: 18px 24px;
     text-align: center;
     pointer-events: none;
@@ -668,10 +668,13 @@
     color: var(--ink-soft);
     margin: 0 0 8px;
   }
+  /* Kept below the page's own "Good morning" title (34px/700, see .greeting)
+     so the balance figure never out-shouts it — the old 36px/700 amount was
+     nearly the same weight class as the page title sitting right above it. */
   .balance-amount {
-    font-size: 36px;
-    font-weight: 700;
-    letter-spacing: var(--tr-34);
+    font-size: var(--fs-title1);
+    font-weight: 600;
+    letter-spacing: var(--tr-28);
     line-height: 1;
     margin: 0;
     font-variant-numeric: tabular-nums;
@@ -706,10 +709,16 @@
     font-size: var(--fs-caption1);
     color: var(--label-tertiary);
   }
+  /* 19px isn't one of Apple's named text styles either (--fs-* jumps
+     17 -> 20), so the tracking is interpolated between --tr-17 and --tr-20
+     rather than reusing an adjacent size's number — same idiom as
+     .entry-desc's 14px above. Sized and weighted up from the plain 17px/500
+     these used to be so In/Out read as real content once .balance-amount
+     above gave up some of its weight, not just leftover captions. */
   .balance-stat-value {
-    font-size: var(--fs-body);
-    font-weight: 500;
-    letter-spacing: var(--tr-17);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.44px;
     /* Mandatory, not cosmetic: these figures get counted up by rAF, and without
        tabular figures the digits jitter horizontally every frame. */
     font-variant-numeric: tabular-nums;
@@ -2688,7 +2697,7 @@
       background: var(--paper);
       padding: 40px 32px 64px;
     }
-    .balance-amount { font-size: 42px; }
+    .balance-amount { font-size: 34px; }
     .tile-grid { gap: 12px; }
     .tile { min-height: 96px; }
     .tile.wide { min-height: 64px; }
