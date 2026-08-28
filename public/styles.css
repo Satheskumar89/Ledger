@@ -1565,14 +1565,60 @@
     flex-direction: column;
   }
   /* The memo field's native keyboard replaces the on-screen keypad (see
-     .calc-keypad[hidden] below) rather than stacking under it, which frees
-     up .calc-bottom's fixed 56% share — far more than the tag row + Add
-     button need on their own. Left alone, that surplus sits as a dead void
-     between the button and the keyboard. Flipping the flex roles lets the
-     amount display absorb it instead, so the button stays flush just above
-     the keyboard, the way a native text field does. */
-  .calc-overlay.keyboard-mode .calc-top-half { flex: 1 1 auto; }
-  .calc-overlay.keyboard-mode .calc-bottom { flex: 0 0 auto; }
+     .calc-keypad[hidden] below) rather than stacking under it, which frees up
+     .calc-bottom's fixed 56% share — far more than the tag row + Add button
+     need on their own. That surplus used to be handed to the amount display
+     (keyboard-mode flipped the two flex roles and nothing else), and both
+     halves of that went wrong on a real iPhone:
+
+       - 300-odd px of display holding a two-character number is a void, not a
+         layout, and
+       - a full-height sheet is only positioned correctly if the height and
+         offsetTop JS reads off visualViewport describe the SAME moment of the
+         keyboard animation. When they don't, the sheet is sized from one and
+         placed from the other: the bottom controls still land on the keyboard,
+         so it looks deliberate, while .calc-top — Cancel, the category, the
+         amount — is pushed clean off the top of the screen and the sheet has
+         no visible way out.
+
+     So once a keyboard is genuinely on screen the sheet stops splitting a
+     full-height box and becomes what it is at that moment: a compact bar of
+     nav + amount + memo + chips + button, sized by its content and glued to
+     the bottom of the (already keyboard-shortened) overlay. There's no
+     surplus left to distribute, and a ~290px sheet anchored to the bottom
+     stays wholly on screen even when the viewport it sits in is read wrong by
+     a few hundred px — the failure mode degrades to "sits a little high"
+     instead of "header is gone".
+
+     kb-inset is set by syncOverlayViewport() only when the visual viewport is
+     actually shrunk, so a desktop browser — where focusing the memo also adds
+     keyboard-mode — keeps its centred modal untouched. BOTH classes are
+     required: on blur the keypad comes back before the keyboard has finished
+     retracting, and the keypad does not fit in a content-sized sheet. */
+  .calc-overlay.keyboard-mode.kb-inset .calc-sheet {
+    /* 0 1, not 0 0: landscape + keyboard can leave less height than even this
+       sheet needs, and shrinking (the display collapses first, it already
+       clips) beats overflowing off the top edge. */
+    flex: 0 1 auto;
+    min-height: 0;
+    margin-top: auto;
+  }
+  .calc-overlay.keyboard-mode.kb-inset .calc-top-half { flex: 0 0 auto; }
+  .calc-overlay.keyboard-mode.kb-inset .calc-bottom { flex: 0 0 auto; }
+  /* The nav bar is no longer at the top of the screen, so the safe-area inset
+     it clears there would be dead space in the middle of one. */
+  .calc-overlay.keyboard-mode.kb-inset .calc-top { padding-top: 16px; }
+  /* Amount stays visible while the memo is typed — it just has no reason to be
+     76px tall when it isn't the thing being edited. */
+  .calc-overlay.keyboard-mode.kb-inset .calc-display {
+    flex: 0 1 auto;
+    padding: 2px 24px 6px;
+  }
+  .calc-overlay.keyboard-mode.kb-inset .calc-display-amount { font-size: 34px; }
+  .calc-overlay.keyboard-mode.kb-inset .amount-sign { font-size: 22px; }
+  /* env(safe-area-inset-bottom) is the home indicator, which the keyboard is
+     already covering. */
+  .calc-overlay.keyboard-mode.kb-inset .calc-add-btn { margin-bottom: 12px; }
   /* A real iOS nav bar: leading control, centred title, trailing group. It has
      to be a grid rather than flex because the date and repeat chips are BOTH
      hidden when confirming a repeat occurrence — under space-between that flung
@@ -1808,6 +1854,10 @@
   }
   .tag-chip { transition: transform 0.28s var(--ease-spring), background var(--dur-fast) ease; }
   .tag-chip:active { transform: scale(0.96); }
+  /* Held down: the press-and-hold that removes a chip telegraphs itself over
+     the hold, so it can't fire as a surprise. Its own slower transition, timed
+     to the hold, is what makes it read as "keep holding" rather than a tap. */
+  .tag-chip.pressing { transform: scale(0.88); transition: transform 0.5s ease-out; }
   .note-input {
     flex: 1 1 auto;
     min-width: 0;
@@ -2217,25 +2267,62 @@
   }
   .due-amount.est { color: var(--ink-soft); }
   /* One tap to confirm a fixed amount. Still an explicit confirmation, just
-     not one that makes you retype a number you already know. */
+     not one that makes you retype a number you already know.
+
+     TINTED, not filled, and that's the whole design of this button:
+
+     - Solid --accent is the app's ONE primary action (the Add entry button).
+       Repeating it per row made a column of 40px discs that outweighed both
+       the description and the amount — in a list whose job is "read what's
+       waiting, then decide", the decide button must not outshout the reading.
+     - The sibling row for a 'varies' repeat used to get a 17px grey chevron.
+       Same kind of object — one occurrence waiting — so a 40px saturated disc
+       beside it read as a different, more urgent species of row. Both are the
+       same tinted circle now, told apart by check vs pencil.
+     - A FILLED blue check is iOS's *done/selected* state (Reminders, Mail).
+       On a row that is by definition not yet confirmed, that's the platform
+       idiom inverted. The tint says "available", the fill on :active says
+       "committed".
+
+     The wash follows the calendar heatmap's idiom (color-mix at --tint-N), so
+     it deepens for dark automatically rather than needing its own dark block,
+     and --accent-text is the AA-safe blue the token comments reserve for
+     glyphs. 36 rather than 40 to sit at the same weight as the chips. */
   .due-confirm {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: var(--accent);
-    color: var(--on-accent);
+    background: color-mix(in srgb, var(--accent) var(--tint-1), transparent);
+    color: var(--accent-text);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font-family: inherit;
     margin-right: 12px;
+    transition: transform 0.28s var(--ease-spring),
+                background var(--dur-fast) ease,
+                color var(--dur-fast) ease;
   }
-  .due-confirm:active { background: var(--accent); color: var(--on-accent); }
-  .due-chevron { width: 17px; height: 17px; color: var(--ink-soft); margin-right: 14px; flex-shrink: 0; }
+  /* The press is the confirmation, so this is the one moment the button earns
+     a solid fill. It replaces a rule that re-set the same two values it
+     already had, i.e. a 40px button with no feedback at all. */
+  .due-confirm:active {
+    background: var(--accent);
+    color: var(--on-accent);
+    transform: scale(0.92);
+  }
+  /* The varies twin — same circle, same weight, different verb. Pressing this
+     one opens the keypad rather than committing anything, so it must NOT take
+     the solid "committed" fill above; it deepens its own tint instead. The
+     pencil glyph is the only other thing that separates the two. */
+  .due-confirm.varies:active {
+    background: color-mix(in srgb, var(--accent) var(--tint-2), transparent);
+    color: var(--accent-text);
+  }
 
   /* A rule in the 'all repeats' list. */
   .rule-row {

@@ -11,7 +11,7 @@
      leading slash only works in that last case. Bump ?v= whenever styles.css
      changes: index.html is always revalidated, so a new HTML then points at a
      new URL and the pair can't go out of sync in a cache. -->
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=8">
 <!-- ICONS. Real files rather than data URIs: these were ~10KB of base64 in
      the <head>, which delayed the stylesheet request behind them, and they are
      cacheable on their own now that public/ is served as static assets.
@@ -254,7 +254,7 @@
    <div class="help-section">
     <h3>Repeats</h3>
     <p>Start an entry as usual, then tap the <strong>repeat</strong> button next to the date to turn it into a repeat — monthly, weekly, quarterly or yearly. The <strong>Repeats</strong> tab lists everything that recurs.</p>
-    <p>Nothing is ever added to the ledger on its own. When a repeat comes due it waits under <strong>Waiting for you</strong> with a count on the tab. Fixed amounts confirm in one tap on the check; ones set to <strong>Varies</strong> open the keypad with last month's figure filled in, so you can correct it.</p>
+    <p>Nothing is ever added to the ledger on its own. When a repeat comes due it waits under <strong>Waiting for you</strong> with a count on the tab. Fixed amounts confirm in one tap on the check; ones set to <strong>Varies</strong> carry a pencil instead and open the keypad with last month's figure filled in, so you can correct it.</p>
     <p>When an amount changes, open the repeat and use <strong>Schedule a change</strong> — you can date it in the future, so next year's increase can be entered today. Entries already in the ledger keep the amount they were confirmed at; only months from the change's date use the new one.</p>
     <p>Editing an entry that came from a repeat asks whether you mean just that month or every month from then on. Swiping it away, or choosing <strong>Skip</strong>, drops that one month and leaves the repeat running.</p>
    </div>
@@ -287,6 +287,7 @@
     <h3>Tags</h3>
     <p>The chips under the amount are quick-fill shortcuts for the memo field — tap one to fill it in, tap it again to clear it.</p>
     <p>Tap <strong>+</strong> to type a new one. It's saved for that category and shows up as a chip from then on. Anything you type as a memo becomes a suggestion too, and the list reorders toward whatever you actually use most.</p>
+    <p><strong>Press and hold</strong> a chip to remove it from that category's row — the toast that follows offers an <strong>Undo</strong>. After that it stays gone even if you keep using the same memo, until you type it back in with <strong>+</strong>. Removing a chip only removes the suggestion; entries already filed under it keep their memo.</p>
    </div>
 
    <div class="help-section">
@@ -1688,8 +1689,62 @@
       return all;
     } catch (e) { return {}; }
   }
+  /* Chips the user has removed.
+     Suggestions are DERIVED — from the seed list, from tags added via '+', and
+     from every note already used in the category — so removing one can't be a
+     delete: tagsFor() would rebuild it from the entries on the next render, and
+     a seed isn't stored anywhere to delete in the first place. It's a
+     suppression list instead, and only an explicit re-add through '+' lifts it,
+     which is the whole point — a note you keep typing shouldn't quietly
+     resurrect a chip you threw away. Device-local, like CUSTOM_TAGS_KEY: the
+     sync payload carries entries, repeats and currency only. */
+  const HIDDEN_TAGS_KEY = 'ledger_hidden_tags_v1';
+
+  function loadHiddenTags() {
+    try {
+      const raw = safeStorage.getItem(HIDDEN_TAGS_KEY);
+      const all = raw ? JSON.parse(raw) : {};
+      // Keyed by category name, so a rename has to carry these over too or a
+      // removed chip comes back the moment a category is renamed.
+      Object.keys(RENAMED_CATEGORIES).forEach(from => {
+        if (!all[from]) return;
+        const to = RENAMED_CATEGORIES[from];
+        all[to] = (all[to] || []).concat(all[from].filter(t => !(all[to] || []).includes(t)));
+        delete all[from];
+        try { safeStorage.setItem(HIDDEN_TAGS_KEY, JSON.stringify(all)); } catch (e) {}
+      });
+      return all;
+    } catch (e) { return {}; }
+  }
+  function saveHiddenTags(all) {
+    try { safeStorage.setItem(HIDDEN_TAGS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+  function hiddenTagsFor(category) {
+    return new Set((loadHiddenTags()[category] || []).map(t => t.toLowerCase()));
+  }
+  function hideTag(category, label) {
+    if (!category || !label) return;
+    const all = loadHiddenTags();
+    const list = all[category] || [];
+    if (!list.some(t => t.toLowerCase() === label.toLowerCase())) list.push(label);
+    all[category] = list;
+    saveHiddenTags(all);
+  }
+  function unhideTag(category, label) {
+    if (!category || !label) return;
+    const all = loadHiddenTags();
+    if (!all[category]) return;
+    all[category] = all[category].filter(t => t.toLowerCase() !== label.toLowerCase());
+    saveHiddenTags(all);
+  }
+
   function addCustomTag(category, label) {
     if (!category || !label || label.length > 24) return;
+    /* Before the early returns below: typing a removed tag back in through '+'
+       is exactly the "I changed my mind" signal, and for a seed or an existing
+       custom tag lifting the suppression is the ONLY thing left to do — both
+       return without adding anything. */
+    unhideTag(category, label);
     const all = loadCustomTags();
     const list = all[category] || [];
     if (list.some(t => t.toLowerCase() === label.toLowerCase())) return;
@@ -1700,12 +1755,17 @@
   }
 
   function tagsFor(categoryName) {
+    // Filtered out at BOTH sources below, not after the sort: a removed chip
+    // that still occupied one of the MAX_TAGS slots would keep a real
+    // suggestion off the row.
+    const hidden = hiddenTagsFor(categoryName);
     const counts = new Map(); // lowercased -> {label, count}
     loadEntries().forEach(e => {
       if (e.category !== categoryName) return;
       const note = (e.desc || '').trim();
       if (!note || note.length > 24) return;
       const k = note.toLowerCase();
+      if (hidden.has(k)) return;
       const cur = counts.get(k) || { label: note, count: 0 };
       cur.count++;
       counts.set(k, cur);
@@ -1716,6 +1776,7 @@
     const custom = loadCustomTags()[categoryName] || [];
     [].concat(CATEGORY_TAGS[categoryName] || [], custom).forEach(label => {
       const k = label.toLowerCase();
+      if (hidden.has(k)) return;
       seen.add(k);
       list.push({ label, count: counts.has(k) ? counts.get(k).count : 0, seed: true });
     });
@@ -1726,6 +1787,57 @@
     // Most-used first; seeds win ties so a fresh install keeps a sane order.
     list.sort((a, b) => b.count - a.count || (a.seed === b.seed ? 0 : a.seed ? -1 : 1));
     return list.slice(0, MAX_TAGS).map(x => x.label);
+  }
+
+  /* Press and hold a chip to remove it — the row is a suggestion list, and a
+     suggestion you never want is worse than no suggestion. Hold rather than an
+     always-visible ✕: the row is scrolled and tapped constantly, and a delete
+     target sitting inside every chip is a mis-tap waiting to happen.
+
+     500ms with movement abandoning the press, because .calc-tags scrolls
+     horizontally — a flick through the tags must not eat one. contextmenu
+     covers the pointer devices, which have no long-press. */
+  const TAG_HOLD_MS = 500;
+
+  function attachTagRemove(chip, label) {
+    let timer = null;
+    const cancel = () => {
+      clearTimeout(timer);
+      timer = null;
+      chip.classList.remove('pressing');
+    };
+    chip.addEventListener('touchstart', () => {
+      delete chip.dataset.held;
+      chip.classList.add('pressing');
+      timer = setTimeout(() => {
+        cancel();
+        // Read by the click handler, which iOS fires on release regardless.
+        chip.dataset.held = '1';
+        removeTag(label);
+      }, TAG_HOLD_MS);
+    }, { passive: true });
+    ['touchmove', 'touchend', 'touchcancel'].forEach(ev =>
+      chip.addEventListener(ev, cancel, { passive: true }));
+    chip.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      removeTag(label);
+    });
+  }
+
+  function removeTag(label) {
+    const cat = currentCategory && currentCategory.name;
+    if (!cat) return;
+    hideTag(cat, label);
+    /* Clear it if it was the filled-in memo: renderTags() re-shows whatever
+       the field holds as a chip, so leaving it selected would put the chip
+       straight back and read as the removal having failed. */
+    if (calcDesc.value.trim().toLowerCase() === label.toLowerCase()) calcDesc.value = '';
+    renderTags();
+    haptic('warn');
+    showToast(`Removed “${label}”`, () => {
+      unhideTag(cat, label);
+      renderTags();
+    });
   }
 
   function renderTags() {
@@ -1749,11 +1861,16 @@
       chip.className = 'tag-chip';
       chip.textContent = label;
       chip.addEventListener('click', () => {
+        // A completed hold removes the chip; the click iOS sends afterwards is
+        // not a tap on it. Checked here rather than swallowed in a capture
+        // listener, which would depend on which handler was registered first.
+        if (chip.dataset.held) { delete chip.dataset.held; return; }
         // Tapping the active chip clears it, so a mis-tap is one tap to undo.
         calcDesc.value = calcDesc.value.trim().toLowerCase() === label.toLowerCase()
           ? '' : label;
         syncTagState();
       });
+      attachTagRemove(chip, label);
       calcTagsEl.appendChild(chip);
     });
 
@@ -1999,6 +2116,9 @@
       if (calcOverlay.classList.contains('open')) return;
       calcOverlay.style.height = '';
       calcOverlay.style.transform = '';
+      // syncOverlayViewport() returns early once closed, so it never gets to
+      // drop this itself.
+      calcOverlay.classList.remove('kb-inset');
     }, SHEET_MS);
   }
 
@@ -2066,11 +2186,28 @@
     if (!calcOverlay.classList.contains('open')) return;
     const vv = window.visualViewport;
     if (!vv) return;
+    /* iOS scrolls the page to bring a focused field above the keyboard even
+       when the body is locked, and a position:fixed overlay rides along —
+       which is one of the two ways the sheet's header ends up off the top of
+       the screen. lockBodyScroll() holds scrollY at 0 for as long as the
+       overlay is open, so putting it back is a no-op in every case EXCEPT
+       that one. */
+    if (window.scrollY) window.scrollTo(0, 0);
     // Only intervene when the viewport is actually shrunk by a keyboard.
     // On desktop this leaves the CSS-driven sizing alone.
-    if (window.innerHeight - vv.height > 100) {
+    const shrunk = window.innerHeight - vv.height > 100;
+    /* Drives the compact keyboard layout in styles.css. Deliberately NOT the
+       same signal as keyboard-mode, which means only "the memo field has
+       focus": a desktop browser focuses that same field without a keyboard
+       ever covering anything. */
+    calcOverlay.classList.toggle('kb-inset', shrunk);
+    if (shrunk) {
       calcOverlay.style.height = vv.height + 'px';
-      calcOverlay.style.transform = `translateY(${vv.offsetTop}px)`;
+      /* Clamped at 0. offsetTop is the compensation for iOS having pushed the
+         layout viewport up; a negative reading (seen mid-animation) would
+         translate the sheet UP, taking its own header off screen — the thing
+         this line exists to prevent. */
+      calcOverlay.style.transform = `translateY(${Math.max(0, vv.offsetTop)}px)`;
     } else {
       calcOverlay.style.height = '';
       calcOverlay.style.transform = '';
@@ -2080,6 +2217,10 @@
     window.visualViewport.addEventListener('resize', syncOverlayViewport);
     window.visualViewport.addEventListener('scroll', syncOverlayViewport);
   }
+  /* A scroll that iOS performs for the keyboard doesn't always show up as a
+     visualViewport event, and this is the repair path for one that lands after
+     the last resync below. Cheap when the overlay is closed: first line out. */
+  window.addEventListener('scroll', syncOverlayViewport, { passive: true });
   /* Focusing the memo field is what actually triggers the keyboard, but iOS
      doesn't always fire a visualViewport 'resize' the moment it appears —
      the AutoFill/QuickType suggestion bar above the keyboard can slide in a
@@ -2093,7 +2234,9 @@
      exact timing. */
   function scheduleViewportResync() {
     syncOverlayViewport();
-    [50, 150, 300, 500].forEach(ms => setTimeout(syncOverlayViewport, ms));
+    // Out to a second: the QuickType bar and Safari's collapsing address bar
+    // can both settle after the keyboard itself has finished animating.
+    [50, 150, 300, 500, 750, 1000].forEach(ms => setTimeout(syncOverlayViewport, ms));
   }
 
   // Let the keyboard's Done key dismiss itself rather than submitting.
@@ -2825,6 +2968,8 @@
     repeat:  '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path>'
            + '<polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>',
     pause:   '<rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect>',
+    pencil:  '<path d="M12 20h9"></path>'
+           + '<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>',
     trash:   '<polyline points="3 6 5 6 21 6"></polyline>'
            + '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>'
            + '<line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>'
@@ -2875,15 +3020,31 @@
       </span>
       <span class="due-amount${varies ? ' est' : ''}">${varies ? '~' : ''}${formatMoney(item.amount)}</span>
     `;
-    open.setAttribute('aria-label',
-      `Confirm ${rep.desc || rep.category} for ${formatDate(item.occ)}`);
+    // Varies opens the keypad instead of confirming, and the label has to say
+    // which of the two a tap on the row will do.
+    open.setAttribute('aria-label', varies
+      ? `Enter the amount for ${rep.desc || rep.category}, due ${formatDate(item.occ)}`
+      : `Confirm ${rep.desc || rep.category} for ${formatDate(item.occ)}`);
     open.addEventListener('click', () => openConfirm(rep, item.occ));
     row.appendChild(open);
 
     if (varies) {
-      const chev = document.createElement('span');
-      chev.innerHTML = uiIcon('chevron', 17, 'due-chevron');
-      row.appendChild(chev.firstElementChild);
+      /* The same 36px affordance as the fixed tick, deliberately: both rows are
+         "act on this occurrence" and the GLYPH is what says how — a check
+         commits an amount already known, a pencil opens the keypad to supply
+         the one that isn't. A 17px grey chevron beside a tinted disc made two
+         rows of the same kind read as different species.
+
+         It's also a real button now. The chevron was a bare span with no
+         handler, so ~50px of row edge that looked tappable did nothing. */
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'due-confirm varies';
+      edit.innerHTML = uiIcon('pencil', 17);
+      edit.setAttribute('aria-label',
+        `Enter the amount for ${rep.desc || rep.category}, due ${formatDate(item.occ)}`);
+      edit.addEventListener('click', () => openConfirm(rep, item.occ));
+      row.appendChild(edit);
     } else {
       // A fixed amount needs no keypad, so confirming it is one tap. Still an
       // explicit confirmation — just not one that retypes a known number.
