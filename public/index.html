@@ -11,7 +11,7 @@
      leading slash only works in that last case. Bump ?v= whenever styles.css
      changes: index.html is always revalidated, so a new HTML then points at a
      new URL and the pair can't go out of sync in a cache. -->
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <!-- ICONS. Real files rather than data URIs: these were ~10KB of base64 in
      the <head>, which delayed the stylesheet request behind them, and they are
      cacheable on their own now that public/ is served as static assets.
@@ -91,15 +91,13 @@
           </div>
           <p class="balance-label">Net</p>
           <p class="balance-amount" id="balanceAmount">$0.00</p>
-          <div class="balance-sub">
-            <div class="balance-stat">
-              <span class="balance-stat-label">In</span>
-              <span class="balance-stat-value in" id="totalIn">$0.00</span>
-            </div>
-            <div class="balance-stat">
-              <span class="balance-stat-label">Out</span>
-              <span class="balance-stat-value out" id="totalOut">$0.00</span>
-            </div>
+          <div class="flow-bar" id="flowBar">
+            <div class="flow-bar-seg in" id="flowBarIn"></div>
+            <div class="flow-bar-seg out" id="flowBarOut"></div>
+          </div>
+          <div class="flow-labels">
+            <span class="flow-label in"><i></i>In <b id="totalIn">$0.00</b></span>
+            <span class="flow-label out"><i></i>Out <b id="totalOut">$0.00</b></span>
           </div>
         </div>
       </div>
@@ -474,6 +472,8 @@
   const balanceAmountEl = document.getElementById('balanceAmount');
   const totalInEl = document.getElementById('totalIn');
   const totalOutEl = document.getElementById('totalOut');
+  const flowBarInEl = document.getElementById('flowBarIn');
+  const flowBarOutEl = document.getElementById('flowBarOut');
   const entryListEl = document.getElementById('entryList');
   const emptyStateEl = document.getElementById('emptyState');
   const categoryListEl = document.getElementById('categoryList');
@@ -2394,14 +2394,6 @@
   /* Numbers the rows of whichever list is about to animate. Capped at 8: with
      ROW_CAP at 150 an uncapped stagger is a 3.3-second cascade. Done here
      rather than in each render loop so all three lists stagger identically. */
-  function applyStagger(el) {
-    if (!el) return;
-    const rows = el.querySelectorAll('.entry, .cat-row, .due-row, .rule-row');
-    for (let i = 0; i < rows.length; i++) {
-      rows[i].style.setProperty('--i', String(Math.min(i, 8)));
-    }
-  }
-
   /* Re-adding a class the element already had won't replay its animation, and
      these containers persist across renders — so the class comes off, layout
      is flushed, and it goes back on. */
@@ -2425,11 +2417,7 @@
     // would stack them and jump the page — so only the incoming panel moves.
     const shown = name === 'entries' ? entryListEl
                 : name === 'categories' ? categoryListEl : repeatListEl;
-    [entryListEl, categoryListEl, repeatListEl]
-      .forEach(el => el.classList.remove('animate-in'));
     replay(shown, 'panel-in');
-    applyStagger(shown);
-    shown.classList.add('animate-in');
     closeOpenRow();
   }
   function activeTab() {
@@ -2483,6 +2471,9 @@
       if ((e.date || '').slice(0, 7) !== prevKey) return;
       prevTotals[e.category] = (prevTotals[e.category] || 0) + e.amount;
     });
+    /* Whether there is anything at all to compare against. In the first month
+       of use last month is empty for EVERY category — see deltaHtml. */
+    const hasPrevMonth = Object.keys(prevTotals).length > 0;
 
     const all = Object.entries(byCat).sort((a, b) => b[1].total - a[1].total);
 
@@ -2504,7 +2495,10 @@
     function deltaHtml(name, data) {
       const prev = prevTotals[name];
       if (prev == null) {
-        return `<span class="cat-delta">new</span>`;
+        /* "new" is only information against a month that has history. Before
+           there is one it lands on every row at once, where it distinguishes
+           nothing and just crowds the amount — so say nothing instead. */
+        return hasPrevMonth ? `<span class="cat-delta">new</span>` : '';
       }
       const diff = data.total - prev;
       const pct = prev ? Math.round((diff / prev) * 100) : 0;
@@ -2520,13 +2514,23 @@
         + `${Math.abs(pct)}% vs ${escapeHtml(prevName)}</span>`;
     }
 
-    function addRow(name, data, maxTotal, groupTotal) {
+    function addRow(name, data, groupTotal, groupCount) {
       const row = document.createElement('div');
       row.className = 'cat-row';
-      const pct = maxTotal ? Math.round((data.total / maxTotal) * 100) : 0;
-      // Share of the group, which is the figure people actually want —
-      // the bar alone only shows rank, not proportion.
-      const share = groupTotal ? Math.round((data.total / groupTotal) * 100) : 0;
+      /* The bar and the percentage share ONE denominator. The bar used to be
+         scaled to the largest category instead, so the top row always drew a
+         full-width bar next to a label reading 87% — two different measures on
+         one line, which invites reading the bar as the number. Scaling both to
+         the group total makes the length mean exactly what the number says. */
+      const share = groupTotal ? (data.total / groupTotal) * 100 : 0;
+      /* A category worth a rounding error still spent something, and two rows
+         both reading 0% look identical when they aren't. Same reasoning as
+         .cat-bar-fill's min-width. */
+      const shareText = share > 0 && share < 1 ? '&lt;1%' : Math.round(share) + '%';
+      /* With a single category in the group the share is always 100%, which
+         only restates the group total sitting directly above it. */
+      const countText = `${data.count} ${data.count === 1 ? 'entry' : 'entries'}`
+        + (groupCount > 1 ? ` · ${shareText}` : '');
       const isOpen = expandedCat === name;
 
       const main = document.createElement('button');
@@ -2542,10 +2546,10 @@
               <span class="cat-row-amount ${data.type}">${formatMoney(data.total)}</span>
             </div>
             <div class="cat-row-line">
-              <span class="cat-row-count">${data.count} ${data.count === 1 ? 'entry' : 'entries'} · ${share}%</span>
+              <span class="cat-row-count">${countText}</span>
               ${deltaHtml(name, data)}
             </div>
-            <div class="cat-bar-track"><div class="cat-bar-fill" data-cat="${catSlug(name)}" style="width:${pct}%"></div></div>
+            <div class="cat-bar-track"><div class="cat-bar-fill" data-cat="${catSlug(name)}" style="width:${share}%"></div></div>
           </div>
         </div>
         <svg class="cat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -2602,15 +2606,13 @@
 
     if (expenses.length) {
       const totalExpense = expenses.reduce((s, r) => s + r[1].total, 0);
-      const maxExpense = Math.max(...expenses.map(r => r[1].total));
       addGroupLabel('Spending', totalExpense);
-      expenses.forEach(([name, data]) => addRow(name, data, maxExpense, totalExpense));
+      expenses.forEach(([name, data]) => addRow(name, data, totalExpense, expenses.length));
     }
     if (income.length) {
       const totalIncome = income.reduce((s, r) => s + r[1].total, 0);
-      const maxIncome = Math.max(...income.map(r => r[1].total));
       addGroupLabel('Income', totalIncome);
-      income.forEach(([name, data]) => addRow(name, data, maxIncome, totalIncome));
+      income.forEach(([name, data]) => addRow(name, data, totalIncome, income.length));
     }
   }
 
@@ -3643,6 +3645,13 @@
     });
     const net = monthIn - monthOut;
 
+    // Share of the month's total flow each side represents — an empty month
+    // (both zero) leaves the bar at 0/0, which reads as the bare grey track.
+    // Written as a scaleX factor, not a width: see .flow-bar-seg in styles.css.
+    const flowTotal = monthIn + monthOut;
+    flowBarInEl.style.transform = 'scaleX(' + (flowTotal > 0 ? monthIn / flowTotal : 0) + ')';
+    flowBarOutEl.style.transform = 'scaleX(' + (flowTotal > 0 ? monthOut / flowTotal : 0) + ')';
+
     // Only a deliberate month change counts; every other render() (delete,
     // undo, import, cloud reconcile, first paint) sets the figure outright.
     if (anim === 'next' || anim === 'prev') {
@@ -3729,18 +3738,18 @@
     renderCategoryTotals(visible, monthName);
     renderRepeats();
 
-    // Applied last, after every list has its rows, so the stagger runs over
-    // the real DOM. Only a deliberate navigation animates; see animateNext.
+    // Applied last, after every list has its rows. Only a deliberate
+    // navigation animates; see animateNext. The whole panel slides as one —
+    // the rows inside it get no entrance of their own, see the Motion section
+    // in styles.css for why.
     if (anim === 'next' || anim === 'prev') {
       const dir = anim === 'next' ? 'm-next' : 'm-prev';
       [entryListEl, categoryListEl, repeatListEl].forEach(el => {
-        el.classList.remove('m-next', 'm-prev', 'animate-in');
+        el.classList.remove('m-next', 'm-prev');
       });
       const shown = activeTab() === 'entries' ? entryListEl
                   : activeTab() === 'categories' ? categoryListEl : repeatListEl;
       replay(shown, dir);
-      applyStagger(shown);
-      shown.classList.add('animate-in');
       // opacity only — .balance-flip is the perspective ancestor of the flip
       // card's backface-visibility subtree, and transforming it makes iOS
       // Safari leak the back face through the front.
@@ -3748,7 +3757,7 @@
       replay(monthLabelTextEl, dir);
     } else {
       [entryListEl, categoryListEl, repeatListEl].forEach(el => {
-        el.classList.remove('animate-in', 'm-next', 'm-prev');
+        el.classList.remove('m-next', 'm-prev');
       });
     }
   }

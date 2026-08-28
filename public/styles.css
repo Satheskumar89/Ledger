@@ -403,21 +403,16 @@
   /* ---- Motion ---------------------------------------------------------
      List rows deliberately get a background highlight and NEVER a scale:
      .entry-content carries attachSwipe's inline translate3d and lives inside
-     an overflow:hidden track, so scaling it is a compositing hazard. */
-  @keyframes rowIn {
-    from { opacity: 0; transform: translateY(6px); }
-  }
-  /* Staggered entrance. --i is capped in JS at 8 steps: with a 150-row cap an
-     uncapped stagger is a 3.3-second cascade. Applied to .entry rather than
-     .entry-content for the translate3d reason above, and with no will-change
-     because there can be dozens of these on screen. */
-  .animate-in .entry,
-  .animate-in .cat-row,
-  .animate-in .due-row,
-  .animate-in .rule-row {
-    animation: rowIn 0.32s var(--ease-out) both;
-    animation-delay: calc(var(--i, 0) * 22ms);
-  }
+     an overflow:hidden track, so scaling it is a compositing hazard.
+
+     Rows also get NO entrance animation of their own. They used to fade and
+     lift in on a 22ms-per-row stagger, which ran *inside* a panel that was
+     already animating — the rows inherited the container's transform and added
+     a second one on top, so a single tab tap put 12 animations on screen for
+     ~560ms while the page was also smooth-scrolling. The container animation
+     below already says "this content changed"; a per-row cascade layered over
+     it is decoration, and at 30+ rows it reads as a wave. Don't reintroduce
+     one without removing the container animation it would sit inside. */
   @keyframes slideNext { from { opacity: 0; transform: translateX(12px); } }
   @keyframes slidePrev { from { opacity: 0; transform: translateX(-12px); } }
   @keyframes fadeIn    { from { opacity: 0; } }
@@ -559,9 +554,9 @@
        height from the calendar on the front and .balance-flip's overflow:hidden
        clips anything taller. A 4-row month is the shallowest front face there
        is — Feb 2026 is the only one this decade, and it is reachable from
-       today — giving about 168px. Contents here come to ~143px, or ~149px on
-       desktop where .balance-amount grows to 34px. Re-run the sum before
-       adding a line. */
+       today — giving about 168px. Contents here (label, amount, flow-bar,
+       flow-labels) come to ~118px, or ~124px on desktop where
+       .balance-amount grows to 34px. Re-run the sum before adding a line. */
     padding: 18px 24px;
     text-align: center;
     pointer-events: none;
@@ -687,44 +682,77 @@
     text-align: center;
   }
   .balance-amount.negative { color: var(--expense); }
-  /* Two stat columns split by a hairline — the iOS Health/Wallet summary form.
-     Replaces "In: $x  Out: $y", where the colon labels made the figures read
-     as a sentence rather than as data. */
-  .balance-sub {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
+  /* Replaces the old two-column In/Out stat block with a single proportional
+     bar: a pill track split into an income segment (left) and an expense
+     segment (right), sized to each side's share of the month's total flow.
+     Reads the relationship between In and Out at a glance instead of making
+     you compare two numbers. Segment widths are set inline by render() in
+     index.html; width transitions on month change (killed under
+     prefers-reduced-motion by the blanket rule above). */
+  .flow-bar {
+    position: relative;
+    width: 100%;
+    height: 6px;
     margin-top: 16px;
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    background: var(--fill-track);
   }
-  .balance-stat {
+  /* Both segments are full-width and SCALED, never sized. Animating `width`
+     costs a layout pass per frame (measured: 36 for one 0.3s run) — the only
+     layout-triggering transition this file had — whereas a transform is
+     compositor-only. In grows from the left edge and Out from the right, and
+     since the two shares always sum to 1 they meet without overlapping.
+     scaleX is safe here only because these are plain rectangles: no text and
+     no border to distort. Widths are set by render() in index.html. */
+  .flow-bar-seg {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    transform: scaleX(0);
+    transition: transform var(--dur-slow) var(--ease-standard);
+  }
+  .flow-bar-seg.in {
+    left: 0;
+    transform-origin: left center;
+    background: var(--income-fill);
+  }
+  .flow-bar-seg.out {
+    right: 0;
+    transform-origin: right center;
+    background: var(--expense-fill);
+  }
+  .flow-labels {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    min-width: 104px;
-    padding: 0 14px;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px;
   }
-  .balance-stat + .balance-stat { border-left: 1px solid var(--hairline); }
-  .balance-stat-label {
+  .flow-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: var(--fs-caption1);
     color: var(--label-tertiary);
   }
-  /* 19px isn't one of Apple's named text styles either (--fs-* jumps
-     17 -> 20), so the tracking is interpolated between --tr-17 and --tr-20
-     rather than reusing an adjacent size's number — same idiom as
-     .entry-desc's 14px above. Sized and weighted up from the plain 17px/500
-     these used to be so In/Out read as real content once .balance-amount
-     above gave up some of its weight, not just leftover captions. */
-  .balance-stat-value {
-    font-size: 19px;
-    font-weight: 600;
-    letter-spacing: -0.44px;
-    /* Mandatory, not cosmetic: these figures get counted up by rAF, and without
-       tabular figures the digits jitter horizontally every frame. */
-    font-variant-numeric: tabular-nums;
+  .flow-label i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
   }
-  .balance-stat-value.in { color: var(--income); }
-  .balance-stat-value.out { color: var(--expense); }
+  .flow-label.in i { background: var(--income-fill); }
+  .flow-label.out i { background: var(--expense-fill); }
+  /* Mandatory, not cosmetic: these figures get counted up by rAF, and without
+     tabular figures the digits jitter horizontally every frame. */
+  .flow-label b {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-left: 1px;
+  }
+  .flow-label.in b { color: var(--income); }
+  .flow-label.out b { color: var(--expense); }
 
   .section-label {
     font-size: var(--fs-footnote);
