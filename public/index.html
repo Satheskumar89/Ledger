@@ -11,7 +11,7 @@
      leading slash only works in that last case. Bump ?v= whenever styles.css
      changes: index.html is always revalidated, so a new HTML then points at a
      new URL and the pair can't go out of sync in a cache. -->
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 <!-- ICONS. Real files rather than data URIs: these were ~10KB of base64 in
      the <head>, which delayed the stylesheet request behind them, and they are
      cacheable on their own now that public/ is served as static assets.
@@ -1907,9 +1907,9 @@
   // they stack on top of each other (seen on iOS).
   calcDesc.addEventListener('focus', () => {
     calcKeypad.hidden = true;
-    // Without the keypad, .calc-bottom's fixed 56% share is far more than
-    // the tag row + Add button need, which left a dead void between them
-    // and the keyboard. keyboard-mode lets the amount display claim that
+    // Without the keypad, .calc-bottom shrinks to just the tag row and the
+    // Add button, and the ~250px that frees would otherwise open as a dead
+    // void between them and the keyboard. keyboard-mode lets the amount display claim that
     // space instead, so the button stays flush above the keyboard.
     calcOverlay.classList.add('keyboard-mode');
     scheduleViewportResync();

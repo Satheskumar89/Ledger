@@ -17,8 +17,9 @@
      scales. Convert opportunistically, per component.
 
      NEVER tokenize: every clamp(), every env(safe-area-inset-*), 100dvh, the
-     calendar's 1px grid gaps, perspective: 1200px, and the calc sheet's
-     flex: 0 0 50% split. Those are load-bearing math, not design values.
+     calendar's 1px grid gaps, perspective: 1200px, and the calc keypad's
+     fixed grid-template-rows, which is what sizes the sheet's bottom half.
+     Those are load-bearing math, not design values.
      ========================================================================== */
   :root {
     /* ---- Layer 1: iOS system primitives ------------------------------- */
@@ -1547,27 +1548,31 @@
     transition: transform 0.3s var(--ease-sheet);
   }
   .calc-overlay.open .calc-sheet { transform: translateY(0); }
-  /* The amount is locked to a fixed share of the sheet, not "whatever's left
-     after the bottom claims its share" — the two previously competed via
-     flex-grow/shrink and the split drifted with content.
+  /* NEITHER half is a percentage any more. Both the 50/50 this started as and
+     the 44/56 that replaced it split the sheet before knowing what was in it,
+     and the keypad — the one part with a correct intrinsic size — then had to
+     absorb whatever the fraction handed it. On a 852pt phone 56% gave the keys
+     114x80: a 1.4:1 slab. Twelve of those, each with its own fill and radius,
+     stop reading as a keyboard and start reading as a grid of cards, which is
+     what made this sheet look noisy at a glance.
 
-     44 rather than the 50 this used to be. At 50/50 the keypad got 229px of a
-     783px sheet — 29% — while ~321px above it displayed a two-character number,
-     so the keys came out 114x51 (a very flat 2.2:1) under a large void and read
-     as undersized even though they clear the 44pt target. 44/56 takes the keys
-     to 114x63 and spends the difference on the half that's actually touched.
-     The amount still has far more room than it needs; don't go much below 40,
-     where clamp(44px, 16vw, 76px) digits start to crowd .calc-top. */
+     So .calc-bottom is sized by its content (fixed keypad rows + tags +
+     button) and the amount takes the remainder. The keys land at 114x58 — the
+     ~2:1 of a real iOS number pad — on every phone instead of stretching with
+     the viewport, and the split still can't drift, because only one side is
+     flexible. Short viewports are handled by the two max-height blocks below,
+     which shrink the rows rather than the fraction. */
   .calc-top-half {
-    flex: 0 0 44%;
+    flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
   }
   /* The memo field's native keyboard replaces the on-screen keypad (see
-     .calc-keypad[hidden] below) rather than stacking under it, which frees up
-     .calc-bottom's fixed 56% share — far more than the tag row + Add button
-     need on their own. That surplus used to be handed to the amount display
+     .calc-keypad[hidden] below) rather than stacking under it. Removing four
+     rows of keys from a content-sized .calc-bottom frees ~250px, far more than
+     the tag row + Add button need. That surplus used to be handed to the
+     amount display
      (keyboard-mode flipped the two flex roles and nothing else), and both
      halves of that went wrong on a real iPhone:
 
@@ -1638,8 +1643,11 @@
     flex: 0 0 auto;
     /* Clears the sheet grabber above it. */
     padding-top: max(18px, env(safe-area-inset-top));
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
+    /* 20, matching the tag row, the keypad and the Add button. At 16 the nav
+       was the only row in the sheet on its own gutter, which shows up as a
+       ragged left edge down the whole thing. */
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
     padding-bottom: 8px;
   }
   .calc-top-trailing {
@@ -1805,12 +1813,11 @@
     border-style: none;
   }
   .tag-chip.add-tag.active { background: var(--ios-fill-2); color: var(--accent-text); }
-  /* Takes the remaining 56% — .calc-top-half is the one with the fixed basis,
-     so the two still can't compete, and this claims whatever it leaves rather
-     than restating the complement. tags/keypad/button then split this box
-     between them via their own flex rules. */
+  /* Sized by its content — see .calc-top-half. Every child below is either a
+     fixed height or content-height, so this box is deterministic and it's the
+     amount above that absorbs the slack. */
   .calc-bottom {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -1882,16 +1889,18 @@
      ground — never a grid of 1px rules, which is what the old gap-over-a-
      coloured-background trick produced.
 
-     HEIGHT BUDGET: .calc-bottom is a hard flex: 0 0 50%, and these gaps plus
-     the top padding cost ~24px inside the tightest box in the app. On a 667pt
-     viewport that overflows, so both max-height blocks below shrink the gaps
-     as well as the rows. Change one, check the other two. */
+     The rows are a FIXED height, not minmax(_, 1fr): this grid is what gives
+     .calc-bottom its size (see .calc-top-half), so a row that grew with the
+     viewport would be sizing the sheet off itself. 58 keeps a key at roughly
+     114x58 on a phone — the ~2:1 of an iOS number pad, and well clear of the
+     44pt target. Both max-height blocks below shrink the rows and the gaps
+     together; change one, check the other two. */
   .calc-keypad {
     display: grid;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(4, minmax(46px, 1fr));
-    gap: 6px;
+    grid-template-rows: repeat(4, 58px);
+    gap: 5px;
     padding: 6px max(20px, env(safe-area-inset-left)) 0
                 max(20px, env(safe-area-inset-right));
     background: transparent;
@@ -1920,14 +1929,17 @@
   .calc-key.func { font-family: inherit; font-size: 18px; color: var(--ink-soft); }
   .calc-add-btn {
     flex-shrink: 0;
-    margin-top: 14px;
+    margin-top: 16px;
     margin-left: max(20px, env(safe-area-inset-left));
     margin-right: max(20px, env(safe-area-inset-right));
     /* clears the home indicator on Face ID iPhones */
     margin-bottom: calc(16px + env(safe-area-inset-bottom));
-    /* 50 is the iOS prominent-button height; the two max-height overrides
-       below are already smaller, so the cascade stays consistent. */
-    min-height: 50px;
+    /* This is the one control that commits the entry, so it has to outweigh
+       any single key: at 50 against 58pt keys the primary action was the
+       smallest block in the bottom half. 56 puts it back on top. The two
+       max-height overrides below are smaller still, in step with the shorter
+       keys they sit beside. */
+    min-height: 56px;
     padding: 0;
     background: var(--accent);
     color: var(--on-accent);
@@ -1963,32 +1975,33 @@
      (this class was discontinued when iOS 16 dropped support) — keeps the
      Add button reachable rather than clipped if content briefly exceeds
      the bottom box, e.g. with the memo row open. */
-  /* .calc-bottom gets the 56% .calc-top-half's fixed 44% basis leaves, and the
-     keypad's grid rows are minmax(46px, 1fr) — a MINIMUM track size, so the
-     keypad cannot shrink below 4 rows + gaps no matter how little room there
-     is. That makes the budget arithmetic load-bearing:
+  /* .calc-bottom is now content-sized, so the budget runs the other way round:
+     it is a FIXED cost, and what has to be checked is that the amount above it
+     is still left something legible.
 
-       available = (viewport-height - 10) * 0.56    // 10 = .calc-sheet margin
-       needed    = tags + (4*row + 3*gap + pad) + (btn + margins)
+       cost      = tags + (4*row + 3*gap + pad) + (btn + margins + inset)
+       remaining = (viewport-height - 10) - cost   // 10 = .calc-sheet margin
+       needed    = .calc-top (~70) + one line of clamp(44px, 16vw, 76px)
 
-     Base rules need 48 + (4*46 + 3*6 + 6) + (50 + 14 + 16) = 336px, so they
-     are safe above ~610px. The 700px threshold below is therefore no longer
-     the tight bound it was — at the old 50/50 split the same 336 needed
-     ~682px, which is what set it. It's kept deliberately: `needed` counts
-     margin-bottom as its bare 16 and ignores env(safe-area-inset-bottom),
-     which is 34 on every notched iPhone, so the real base requirement is
-     nearer 370 (~671px) and the slack above 610 is what absorbs it. The block
-     below needs
-       44 + (4*36 + 3*4 + 4) + (44 + 8 + 10) = 266px,
-     which now clears down to a ~485px viewport, well under the 553px floor
-     this had at 50/50 (iPhone SE with Safari chrome is ~553). Anything
-     shorter than that in PORTRAIT doesn't ship; shorter still is landscape,
-     which the max-height: 460px block below handles under different rules.
-     Change the split or any number here and re-run both sums. */
+     Base rules cost 48 + (4*58 + 3*5 + 6) + (56 + 16 + 16 + 34) = 423px
+     — env(safe-area-inset-bottom) is 34 on every notched iPhone and is
+     counted here, unlike the version of this sum that preceded it. That
+     leaves 419px on a 852pt iPhone and still ~234px on a 667pt one, so the
+     base rules alone are safe well below the old 610px bound.
+
+     They run out around a 553pt viewport (iPhone SE with Safari chrome),
+     where 120px of remainder can no longer hold a 63px line under a 70px nav.
+     Hence the block below, which costs
+       44 + (4*46 + 3*4 + 4) + (50 + 10 + 12 + 34) = 350px
+     and leaves 193px at 553 — comfortable, with room for the amount to stay
+     at full size rather than being shrunk as well. Anything shorter in
+     PORTRAIT doesn't ship; shorter still is landscape, which the
+     max-height: 460px block below handles under inverted rules. Change a row
+     height or a margin here and re-run both sums. */
   @media (max-height: 700px) {
     .calc-tags { padding-bottom: 8px; }
-    .calc-keypad { grid-template-rows: repeat(4, minmax(36px, 1fr)); gap: 4px; padding-top: 4px; }
-    .calc-add-btn { margin-top: 8px; margin-bottom: 10px; min-height: 44px; }
+    .calc-keypad { grid-template-rows: repeat(4, 46px); gap: 4px; padding-top: 4px; }
+    .calc-add-btn { margin-top: 10px; margin-bottom: 12px; min-height: 50px; }
   }
 
   /* Landscape phone. The 50/50 split assumes a tall screen: at ~390px of
@@ -2006,7 +2019,15 @@
     .calc-top { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 4px; }
     .calc-bottom { flex: 1 1 auto; }
     .calc-tags { padding-bottom: 8px; }
-    .calc-keypad { grid-template-rows: repeat(4, minmax(32px, 1fr)); gap: 3px; padding-top: 3px; }
+    /* This block inverts the split — .calc-bottom is the flexible half here —
+       so the keypad goes back to growing into it, and its rows back to a
+       minimum rather than a fixed height. */
+    .calc-keypad {
+      flex: 1 1 auto;
+      grid-template-rows: repeat(4, minmax(32px, 1fr));
+      gap: 3px;
+      padding-top: 3px;
+    }
     .calc-add-btn {
       margin-top: 6px;
       margin-bottom: calc(6px + env(safe-area-inset-bottom));
