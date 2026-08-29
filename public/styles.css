@@ -1624,22 +1624,28 @@
   /* env(safe-area-inset-bottom) is the home indicator, which the keyboard is
      already covering. */
   .calc-overlay.keyboard-mode.kb-inset .calc-add-btn { margin-bottom: 12px; }
-  /* A real iOS nav bar: leading control, centred title, trailing group. It has
-     to be a grid rather than flex because the date and repeat chips are BOTH
-     hidden when confirming a repeat occurrence — under space-between that flung
-     the category label to the far right edge, and under flex-start with auto
-     margins it still drifted, because that centres it in the space left over
-     after Cancel rather than in the row. Two equal 1fr side columns keep the
-     title centred no matter how many trailing chips exist.
+  /* One visual language across the row: Cancel is the only bare text, and
+     everything that CHANGES the entry — category, date, repeat — wears the same
+     capsule fill. The category used to be a centred title, which made the
+     control reached for on every single entry the one thing on the row that
+     didn't look like a control; a 4px caret was its entire affordance. It now
+     sits beside Cancel as a pill, so the row reads left to right as "leave |
+     what this is | when it is | does it recur".
 
-     minmax(0, auto) on the middle column, not plain auto: a grid `auto` track
-     won't shrink below min-content, so a long category name would push the
-     trailing chips off a narrow screen instead of ellipsising. */
+     Still a grid, not flex: the date and repeat chips are BOTH hidden when
+     confirming a repeat occurrence, and a trailing 1fr column absorbs that
+     without the pills before it shifting. The columns are auto / minmax(0,auto)
+     / 1fr — Cancel and the category size to content, the trailing group takes
+     the rest and pins itself to the end.
+
+     minmax(0, auto) rather than plain auto on the category: a grid `auto` track
+     won't shrink below min-content, so a long name would push the trailing
+     chips off a narrow screen instead of ellipsising. */
   .calc-top {
     display: grid;
-    grid-template-columns: 1fr minmax(0, auto) 1fr;
+    grid-template-columns: auto minmax(0, auto) 1fr;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex: 0 0 auto;
     /* Clears the sheet grabber above it. */
     padding-top: max(18px, env(safe-area-inset-top));
@@ -1648,7 +1654,7 @@
        ragged left edge down the whole thing. */
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: 8px;
+    padding-bottom: 10px;
   }
   .calc-top-trailing {
     display: flex;
@@ -1663,7 +1669,9 @@
     color: var(--accent-text);
     font-size: var(--fs-body);
     min-height: 44px;
-    padding: 0 4px 0 0;
+    /* The row's 10px gap does the separating now, so the old optical nudge
+       would just read as the pill sitting too far from its label. */
+    padding: 0;
     cursor: pointer;
     font-family: inherit;
   }
@@ -1671,21 +1679,33 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     min-width: 0;
-    /* Content-sized on purpose: #calcCatSelect is laid over this box invisibly,
-       so widening it would widen the picker's hit area for nothing. */
-    justify-self: center;
-    min-height: 44px;
+    /* No justify-self: it has to STRETCH to its track. The trailing 1fr column
+       eats all the free space, so the track is content-sized whenever there's
+       room and the pill is exactly as wide as the name — but under pressure
+       (a 320pt screen showing 'Transport' next to a dated chip) the track
+       shrinks and the item has to come with it. Pinned to start instead, the
+       item sized to its content and drew straight over the date chip.
+       #calcCatSelect is laid over this box invisibly, so the box IS the
+       picker's hit area, which is the point of giving it a fill. */
+    /* 40, the height iOS gives a nav-bar capsule, matching .date-btn beside
+       it. Under the 44pt target on its own, like .tag-chip; .calc-top's
+       18px/10px padding is what supplies the slop. */
+    min-height: 40px;
+    padding: 0 12px 0 8px;
+    background: var(--fill-track);
+    border-radius: var(--r-pill);
     font-size: 16px;
     color: var(--ink-soft);
   }
-  .calc-cat .tile-icon { width: 24px; height: 24px; border-radius: 6px; }
+  .calc-cat .tile-icon { width: 26px; height: 26px; border-radius: 7px; }
   /* A native select is as wide as its longest option ('Transport'), which
      stranded the caret far from short names like 'Other'. Show a label
      sized to the actual value and lay the select over it invisibly. */
   .cat-label {
     font-size: 16px;
+    font-weight: 500;
     color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
@@ -1721,11 +1741,13 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-width: 44px;
-    height: 44px;
-    padding: 0 10px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
     border: none;
-    border-radius: var(--r-control);
+    /* Fully round, matching .calc-cat — the rounded-rect these used to be was
+       a third shape on a row that already had two. */
+    border-radius: var(--r-pill);
     background: var(--fill-track);
     color: var(--accent-text);
     /* The repeat chip beside the date is a real <button>, so these two keep
@@ -1744,10 +1766,19 @@
     color: var(--ink);
     white-space: nowrap;
   }
+  /* Once the chip is showing a date, the calendar glyph beside it is saying
+     the same thing twice — and it costs 26px on a row where the category pill
+     is the thing that has to ellipsise when space runs out. The label replaces
+     the icon rather than joining it, which is also how the repeat chip works
+     in reverse: one signal each. */
+  .date-btn.off-today svg { display: none; }
   .date-btn.off-today {
     border-color: var(--accent-text);
     color: var(--accent-text);
   }
+  /* Accent, not --ink: in a row where every capsule is a control, a date in
+     body colour reads as a printed value you can't touch. */
+  .date-btn.off-today .date-badge { color: var(--accent-text); }
   .date-btn input[type="date"] {
     position: absolute;
     inset: 0;
@@ -1834,8 +1865,12 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
+    /* On the keypad's 4px gutter, not the sheet's 20px one: this row sits
+       directly on top of the keys and its chips scroll off the same edges,
+       so a wider inset here read as the tags being indented from a keyboard
+       that wasn't. */
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(4px, env(safe-area-inset-right));
     padding-bottom: 12px;
   }
   .calc-tags::-webkit-scrollbar { display: none; }
