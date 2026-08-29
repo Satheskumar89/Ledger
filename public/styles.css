@@ -1901,8 +1901,15 @@
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(4, 58px);
     gap: 5px;
-    padding: 6px max(20px, env(safe-area-inset-left)) 0
-                max(20px, env(safe-area-inset-right));
+    /* Full-bleed, unlike every other row in the sheet, which sits on the 20px
+       gutter. That's the iOS split: content is inset, the keyboard is not —
+       and it matches .calc-tags directly above, whose chips overflow to the
+       screen edge because the row scrolls. A 20px gutter here left the keypad
+       looking like a widget dropped into the sheet while the chips beside it
+       ran off the edge. 4 rather than 0 so the outer margin roughly matches
+       the 5px between the caps. */
+    padding: 6px max(4px, env(safe-area-inset-left)) 0
+                max(4px, env(safe-area-inset-right));
     background: transparent;
     /* Keeps the "this region is a keyboard" read without drawing the grid. */
     border-top: 1px solid var(--hairline);
