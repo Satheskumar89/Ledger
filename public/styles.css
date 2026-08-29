@@ -465,46 +465,11 @@
      the top-left corner attached to nothing. A picker is a TINTED control in
      iOS, not grey text — the old grey-with-a-hand-drawn-caret treatment was
      from the paper palette. */
-  .currency-picker {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    /* Full 44pt hit area without visible bulk. */
-    min-height: 44px;
-    padding: 0 4px;
-    color: var(--accent-text);
-  }
-  .currency-label {
-    font-size: var(--fs-subhead);
-    font-weight: 600;
-    letter-spacing: var(--tr-15);
-    font-variant-numeric: tabular-nums;
-  }
-  /* chevron.up.chevron.down — the glyph iOS uses on a compact menu button. */
-  .currency-chevron {
-    width: 11px;
-    height: 11px;
-    flex-shrink: 0;
-  }
-  /* The real control, laid invisibly over the label above. */
-  #currencySelect {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    opacity: 0;
-    font-size: 16px; /* below 16px iOS zooms the page on focus */
-    font-family: inherit;
-    background: transparent;
-    -webkit-appearance: none;
-    appearance: none;
-  }
+  /* The currency picker used to live here, absolutely positioned in the top
+     right of .face.back with a hand-drawn chevron and its own invisible-select
+     rule. It is now a .rs-row in the settings region at the foot of the page
+     and needs no styles of its own — .rs-value already draws the caret and
+     lays the native select over the label. */
 
   /* The card defaults to a calendar (see .cal-* below) and flips to this
      Net/In/Out summary on tap — see .balance-flip / .flip-zone. */
@@ -762,6 +727,12 @@
     /* iOS insets a section header to the cell's text edge. */
     margin: 0 0 7px 16px;
   }
+  /* No top margin above, because a section header is normally the first child
+     of a container that already spaces itself (.sync-block, .help-body). Where
+     one follows a card directly — 'Amount over time' under the Schedule card in
+     the repeat sheet — that left the header welded to the card above it. 22 is
+     the gap .rs-note already uses to separate groups in that sheet. */
+  .entry-list-card + .section-label { margin-top: 22px; }
   /* Landing spot for the tab-click scroll (see scrollToTabs) — stopping here
      rather than at the tab row itself keeps the category tiles in view, so
      the jump reads as "bring the list closer" rather than "snap to top". */
@@ -1632,18 +1603,21 @@
      sits beside Cancel as a pill, so the row reads left to right as "leave |
      what this is | when it is | does it recur".
 
-     Still a grid, not flex: the date and repeat chips are BOTH hidden when
-     confirming a repeat occurrence, and a trailing 1fr column absorbs that
-     without the pills before it shifting. The columns are auto / minmax(0,auto)
-     / 1fr — Cancel and the category size to content, the trailing group takes
-     the rest and pins itself to the end.
+     Flex with auto margins on the pill, NOT a centred grid track. The three
+     items have very different widths — Cancel is ~52, the trailing group ~112 —
+     so centring the pill in the ROW leaves it hard against the date chip while
+     a wide gap opens after Cancel. auto margins split the actual free space
+     equally instead, which is what "centred between its neighbours" means, and
+     it stays correct when the trailing group shrinks to one chip (a repeat is
+     set) or to nothing (confirming an occurrence).
 
-     minmax(0, auto) rather than plain auto on the category: a grid `auto` track
-     won't shrink below min-content, so a long name would push the trailing
-     chips off a narrow screen instead of ellipsising. */
+     The old grid centred a title rather than a pill and had to fight the same
+     problem with two equal 1fr side columns; auto margins express it directly
+     and shrink correctly, which a `justify-self` item never did — pinned to a
+     track edge it sized to its content and drew straight over the date chip on
+     a narrow screen. */
   .calc-top {
-    display: grid;
-    grid-template-columns: auto minmax(0, auto) 1fr;
+    display: flex;
     align-items: center;
     gap: 10px;
     flex: 0 0 auto;
@@ -1660,10 +1634,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    justify-self: end;
+    flex-shrink: 0;
   }
   .calc-cancel {
-    justify-self: start;
+    flex-shrink: 0;
     background: none;
     border: none;
     color: var(--accent-text);
@@ -1681,14 +1655,14 @@
     align-items: center;
     gap: 7px;
     min-width: 0;
-    /* No justify-self: it has to STRETCH to its track. The trailing 1fr column
-       eats all the free space, so the track is content-sized whenever there's
-       room and the pill is exactly as wide as the name — but under pressure
-       (a 320pt screen showing 'Transport' next to a dated chip) the track
-       shrinks and the item has to come with it. Pinned to start instead, the
-       item sized to its content and drew straight over the date chip.
+    /* The auto margins are what centre it between Cancel and the trailing
+       group; see .calc-top. It is also the only item on the row allowed to
+       shrink, so a long name ellipsises rather than shoving the chips off the
+       edge — hence min-width: 0 above and the ellipsis on .cat-label.
        #calcCatSelect is laid over this box invisibly, so the box IS the
        picker's hit area, which is the point of giving it a fill. */
+    margin-left: auto;
+    margin-right: auto;
     /* 40, the height iOS gives a nav-bar capsule, matching .date-btn beside
        it. Under the 44pt target on its own, like .tag-chip; .calc-top's
        18px/10px padding is what supplies the slop. */
@@ -1766,18 +1740,14 @@
     color: var(--ink);
     white-space: nowrap;
   }
-  /* Once the chip is showing a date, the calendar glyph beside it is saying
-     the same thing twice — and it costs 26px on a row where the category pill
-     is the thing that has to ellipsise when space runs out. The label replaces
-     the icon rather than joining it, which is also how the repeat chip works
-     in reverse: one signal each. */
-  .date-btn.off-today svg { display: none; }
   .date-btn.off-today {
     border-color: var(--accent-text);
     color: var(--accent-text);
   }
-  /* Accent, not --ink: in a row where every capsule is a control, a date in
-     body colour reads as a printed value you can't touch. */
+  /* Accent only when the date ISN'T today. Every chip on the row is a control,
+     so tint alone can't be what marks one as tappable — which frees it to do
+     the more useful job: 'Today' sits quiet in --ink, and any other day lights
+     up, so a misdated entry is visible without reading the words. */
   .date-btn.off-today .date-badge { color: var(--accent-text); }
   .date-btn input[type="date"] {
     position: absolute;
@@ -2532,25 +2502,33 @@
 
   /* Amount over time: a rate list, drawn as a timeline so 'this figure
      changes on this date' is readable at a glance. */
+  /* One row per rate: dot, amount, date, state, remove. It used to stack the
+     amount over a 'from <date>' line, which was forced by the native date
+     field — around 130px of MM/DD/YYYY plus a picker glyph, too wide to sit
+     beside the amount. .rate-when below replaces it with a label the app
+     formats itself, and the whole rate fits on one line.
+
+     The timeline connector between dots went with the second line. It linked
+     tall two-line rows into a visible sequence; between 62px rows it was mostly
+     the gap above each dot, and the dot's own filled/hollow state still says
+     which rates are live and which are scheduled. */
+  /* WIDTH BUDGET. Five things share one row and the inner width is 321px on a
+     393pt phone (sheet - .help-body's 20px gutters - this padding). Measured:
+     dot 9, amount 76, tag 48, remove 32, four 8px gaps = 197, leaving 124 for
+     the date — which needs 118 for its longest form, 'Aug 28, 2027'. That is
+     the whole reason for the numbers below, and for 'Now'/'Later' instead of
+     'In effect'/'Scheduled': the longer pair cost 73px and pushed the date to
+     an ellipsis, and beside a column of dates the short pair says the same
+     thing. Re-run the sum before widening anything here. */
   .rate-row {
     position: relative;
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
     width: 100%;
-    padding: 12px 16px;
+    padding: 12px 14px;
   }
   .rate-row:last-of-type { border-bottom: none; }
-  /* Negative margin lets the connector run the full height of the row,
-     including its padding, so it meets the next row's dot without a gap. */
-  .rate-spine {
-    flex-shrink: 0;
-    width: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: -12px 0;
-    padding-top: 18px;
-  }
   .rate-dot {
     width: 9px;
     height: 9px;
@@ -2559,11 +2537,44 @@
     flex-shrink: 0;
   }
   .rate-dot.future { background: var(--card); border: 1.5px solid var(--accent); }
-  .rate-line { flex: 1; width: 1px; background: var(--hairline); margin-top: 4px; }
-  .rate-body { flex: 1; min-width: 0; }
-  .rate-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .rate-amount { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .rate-when { display: block; font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  /* The date as a tappable value rather than a native date field — the same
+     visible-label-over-invisible-input idiom as .rs-value and the calculator's
+     date chip. That is what buys the row its width back. */
+  .rate-when {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 10px;
+    border-radius: var(--r-control);
+    background: var(--fill-track);
+    color: var(--ink);
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .rate-when-label {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rate-when input[type="date"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    font-size: 16px; /* below 16px iOS zooms the page on focus */
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
   .rate-tag {
     flex-shrink: 0;
     padding: 2px 7px;
@@ -2583,9 +2594,14 @@
      old `background: var(--card)` was #1C1C1E sitting on a #1C1C1E sheet, so a
      1px stroke was the only thing defining them — they read as floating
      outlines rather than as fields. */
+  /* A fixed column, not flex: 1. Sharing the slack with .rate-when made every
+     amount field a different width, because each row's date is a different
+     length — 'Aug 28' against 'Aug 28, 2027' — so the one column you actually
+     read down came out ragged. The date takes the slack instead; it is a label,
+     and a label can centre in whatever it is given. */
   .rate-amount-input {
+    flex: 0 0 76px;
     min-width: 0;
-    flex: 1;
     height: 38px;
     padding: 0 10px;
     border: none;
@@ -2600,32 +2616,10 @@
   }
   .rate-amount-input::-webkit-outer-spin-button,
   .rate-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .rate-from {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 7px;
-    font-size: 13px;
-    color: var(--ink-soft);
-  }
-  .rate-date {
-    flex: 1;
-    min-width: 0;
-    height: 34px;
-    padding: 0 10px;
-    border: none;
-    border-radius: var(--r-control);
-    background: var(--fill-track);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 15px;
-    -webkit-appearance: none;
-    appearance: none;
-  }
   .rate-del {
     flex-shrink: 0;
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     border: none;
     border-radius: var(--r-control);

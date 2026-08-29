@@ -11,7 +11,7 @@
      leading slash only works in that last case. Bump ?v= whenever styles.css
      changes: index.html is always revalidated, so a new HTML then points at a
      new URL and the pair can't go out of sync in a cache. -->
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=15">
 <!-- ICONS. Real files rather than data URIs: these were ~10KB of base64 in
      the <head>, which delayed the stylesheet request behind them, and they are
      cacheable on their own now that public/ is served as static assets.
@@ -75,20 +75,6 @@
       <div class="flip-inner">
         <div class="face front" id="calFace"></div>
         <div class="face back">
-          <!-- Same idiom as .calc-cat and .date-btn elsewhere in this file: a
-               visible label plus a chevron, with the real <select> laid over it
-               at opacity 0. A native select is as wide as its longest option,
-               which strands the caret; this keeps the control sized to the
-               value while still opening the native picker. -->
-          <div class="currency-picker">
-            <span class="currency-label" id="currencyLabel">USD</span>
-            <svg class="currency-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="8 10 12 6 16 10"></polyline>
-              <polyline points="8 14 12 18 16 14"></polyline>
-            </svg>
-            <select id="currencySelect" aria-label="Display currency"></select>
-          </div>
           <p class="balance-label">Net</p>
           <p class="balance-amount" id="balanceAmount">$0.00</p>
           <div class="flow-bar" id="flowBar">
@@ -125,10 +111,39 @@
   </div>
   <p class="swipe-hint" id="swipeHint" style="display:none;">Swipe left to delete · right to edit</p>
 
-  <div class="backup-row">
-    <button type="button" class="backup-btn" id="exportBtn">Export backup</button>
-    <button type="button" class="backup-btn" id="importBtn">Import backup</button>
-    <input type="file" id="importFile" accept="application/json" style="display:none;">
+  <!-- Currency is a ledger-wide preference, so it lives with the other
+       ledger-wide concerns rather than on the balance card, where it was a
+       set-once control occupying the most-viewed surface in the app — reachable
+       only by discovering the flip, and needing a click handler of its own to
+       stop that flip from firing underneath it. First in this run of blocks so
+       the region reads least-dangerous to most: preference, backup, sync,
+       erase. .rs-row/.rs-value are the repeat sheet's own list-row components;
+       they already lay a native select invisibly over its label, and a single
+       row in a card drops its separator on its own. -->
+  <div class="sync-block">
+    <p class="section-label">Preferences</p>
+    <div class="entry-list-card">
+      <div class="rs-row">
+        <span>Currency</span>
+        <span class="rs-value">
+          <span id="currencyLabel">USD</span>
+          <select id="currencySelect" aria-label="Display currency"></select>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wrapped so it gets .sync-block's 20px like every other top-level group
+       down here. .backup-row's own margin-top is 6, which is right for the rows
+       nested INSIDE a block (Sync now / Turn off, Pull / Push) — they continue
+       a group rather than starting one — but far too tight where it now
+       follows the Preferences card. -->
+  <div class="sync-block">
+    <div class="backup-row">
+      <button type="button" class="backup-btn" id="exportBtn">Export backup</button>
+      <button type="button" class="backup-btn" id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+    </div>
   </div>
 
   <div class="sync-block">
@@ -193,15 +208,11 @@
     <!-- Trailing group, so .calc-top can be a real three-column nav bar and
          the category title stays centred even when both chips are hidden. -->
     <div class="calc-top-trailing">
+      <!-- No calendar glyph: the chip always names its own day now, and an
+           icon beside the word 'Today' says the same thing twice while
+           costing 26px on the row the category pill has to shrink into. -->
       <div class="date-btn" id="dateBtn">
-        <span class="date-badge" id="dateChipLabel" hidden></span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="4.5" width="18" height="17" rx="2.5"></rect>
-          <line x1="16" y1="2.5" x2="16" y2="6.5"></line>
-          <line x1="8" y1="2.5" x2="8" y2="6.5"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
+        <span class="date-badge" id="dateChipLabel">Today</span>
         <input type="date" id="calcDate" aria-label="Entry date">
       </div>
       <button type="button" class="date-btn" id="repeatBtn" aria-label="Repeat: never">
@@ -246,9 +257,10 @@
    <div class="help-section">
     <h3>Using the ledger</h3>
     <p>Tap a category tile to start an entry — pick the amount on the keypad, add a note or tag if you want, then <strong>Add entry</strong>. Net, In, and Out update right away for the month you're viewing.</p>
-    <p>Swipe an entry left to delete it, right to edit it (or hover the row if you're on a trackpad or mouse). Switch to <strong>By category</strong> to see totals grouped instead of a flat list.</p>
+    <p>Swipe an entry left to delete it, right to edit it (or hover the row if you're on a trackpad or mouse). Switch to <strong>Category</strong> to see totals grouped instead of a flat list.</p>
     <p>Use the arrows, or tap the month name, to move between months — tapping the current month jumps back to today.</p>
-    <p>Tap the calendar to flip it over for the month's <strong>Net</strong>, <strong>In</strong> and <strong>Out</strong>. The currency shown in the corner of that side is a button — tap it to change currency, and every figure in the app follows.</p>
+    <p>Tap the calendar to flip it over for the month's <strong>Net</strong>, <strong>In</strong> and <strong>Out</strong>.</p>
+    <p><strong>Preferences</strong>, near the bottom of the page, holds the <strong>Currency</strong> every figure in the app is shown in.</p>
    </div>
 
    <div class="help-section">
@@ -1574,7 +1586,18 @@
     });
   }
 
-  /* The <select> itself is invisible (see .currency-picker), so the label is
+  /* A rate's date has to sit inline beside its amount, so it is written as
+     short as it can be without becoming ambiguous: the year is dropped for the
+     current year, which is where a rate almost always starts, and kept
+     otherwise — a change scheduled for next April has to say which April. */
+  function rateDateLabel(iso) {
+    const sameYear = iso.slice(0, 4) === todayStr().slice(0, 4);
+    return new Date(iso + 'T00:00:00').toLocaleDateString(undefined, sameYear
+      ? { month: 'short', day: 'numeric' }
+      : { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  /* The <select> itself is invisible (see .rs-value), so the label is
      what the user actually reads — it has to track the value everywhere the
      value can change, which includes a cloud sync pulling a different
      currency down from another device. */
@@ -1931,13 +1954,17 @@
     if (!v) collapseNote();
   });
 
-  /* Icon only when the date is today; otherwise the date shows itself so
-     an entry can't quietly land on the wrong day. */
+  /* The chip always names its day — 'Today' included. It used to go back to a
+     bare calendar icon for today, which meant the one thing the control is for
+     was unreadable in the most common state, and the chip changed width every
+     time the date changed. off-today still tints it, so a date that ISN'T
+     today keeps announcing itself and an entry can't quietly land on the
+     wrong day. */
   function updateDateLabel() {
     const v = calcDate.value;
     const today = todayStr();
     if (!v || v === today) {
-      dateChipLabel.hidden = true;
+      dateChipLabel.textContent = 'Today';
       dateBtn.classList.remove('off-today');
       dateBtn.setAttribute('aria-label', 'Date: today');
       return;
@@ -1948,7 +1975,6 @@
                : diff === 1 ? 'Tomorrow'
                : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     dateChipLabel.textContent = text;
-    dateChipLabel.hidden = false;
     dateBtn.classList.add('off-today');
     dateBtn.setAttribute('aria-label', 'Date: ' + text);
   }
@@ -2169,8 +2195,6 @@
   flipZoneEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFlip(); }
   });
-  // Selecting a currency shouldn't also flip the card back to the calendar.
-  currencySelectEl.addEventListener('click', (e) => e.stopPropagation());
   // Desktop-only backdrop: clicking outside the sheet dismisses it, same as
   // the calculator overlay's desktop treatment.
   helpOverlay.addEventListener('click', (e) => {
@@ -3256,31 +3280,23 @@
             const future = r.from > today;
             const isEffective = !future && r.amount === effective &&
               (i === rates.length - 1 || rates[i + 1].from > today);
-            const last = i === rates.length - 1;
             return `
               <div class="rate-row">
-                <div class="rate-spine">
-                  <span class="rate-dot${future ? ' future' : ''}"></span>
-                  ${last ? '' : '<span class="rate-line"></span>'}
-                </div>
-                <div class="rate-body">
-                  <div class="rate-top">
-                    <input class="rate-amount-input" type="number" step="0.01" min="0"
-                           inputmode="decimal" data-i="${i}" value="${r.amount}"
-                           aria-label="Amount">
-                    ${future ? '<span class="rate-tag later">Scheduled</span>'
-                             : isEffective ? '<span class="rate-tag now">In effect</span>' : ''}
-                  </div>
-                  <div class="rate-from">
-                    <span>from</span>
-                    <input class="rate-date" type="date" data-i="${i}" value="${r.from}"
-                           aria-label="In effect from">
-                    ${rates.length > 1
-                      ? `<button type="button" class="rate-del" data-i="${i}"
-                           aria-label="Remove this amount">✕</button>`
-                      : ''}
-                  </div>
-                </div>
+                <span class="rate-dot${future ? ' future' : ''}"></span>
+                <input class="rate-amount-input" type="number" step="0.01" min="0"
+                       inputmode="decimal" data-i="${i}" value="${r.amount}"
+                       aria-label="Amount">
+                <span class="rate-when">
+                  <span class="rate-when-label">${rateDateLabel(r.from)}</span>
+                  <input class="rate-date" type="date" data-i="${i}" value="${r.from}"
+                         aria-label="In effect from">
+                </span>
+                ${future ? '<span class="rate-tag later">Later</span>'
+                         : isEffective ? '<span class="rate-tag now">Now</span>' : ''}
+                ${rates.length > 1
+                  ? `<button type="button" class="rate-del" data-i="${i}"
+                       aria-label="Remove this amount">✕</button>`
+                  : ''}
               </div>`;
           }).join('')}
           <button type="button" class="rs-add" id="rsAddRate">
@@ -3362,7 +3378,16 @@
     const d = rsDraft;
 
     const once = document.getElementById('rsOnce');
-    if (once) once.addEventListener('click', () => { rsDraft = null; closeRepeatSheet(); });
+    // syncRepeatChip is not optional here. Dropping the draft is only half of
+    // going back to a one-off: the chip keeps its 'Every 1st' badge, the date
+    // button stays hidden (syncRepeatChip is what unhides it), and the Add
+    // button keeps its repeat wording — so the tap looked like it did nothing
+    // even though the draft really had been cleared. Same call rsCancel makes.
+    if (once) once.addEventListener('click', () => {
+      rsDraft = null;
+      closeRepeatSheet();
+      syncRepeatChip();
+    });
 
     document.getElementById('rsFreq').addEventListener('change', (e) => {
       d.freq = e.target.value;
