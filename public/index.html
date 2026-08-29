@@ -11,7 +11,7 @@
      leading slash only works in that last case. Bump ?v= whenever styles.css
      changes: index.html is always revalidated, so a new HTML then points at a
      new URL and the pair can't go out of sync in a cache. -->
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=18">
 <!-- ICONS. Real files rather than data URIs: these were ~10KB of base64 in
      the <head>, which delayed the stylesheet request behind them, and they are
      cacheable on their own now that public/ is served as static assets.
@@ -200,7 +200,7 @@
   <div class="calc-top-half">
    <div class="calc-top">
     <button class="calc-cancel" id="calcCancel">Cancel</button>
-    <div class="calc-cat">
+    <div class="calc-cat" id="calcCatBox">
       <span class="tile-icon" id="calcCatDot"></span>
       <span class="cat-label" id="calcCatLabel">Grocery</span>
       <select id="calcCatSelect" aria-label="Category"></select>
@@ -531,6 +531,7 @@
 
   const calcOverlay = document.getElementById('calcOverlay');
   const calcCancel = document.getElementById('calcCancel');
+  const calcCatBox = document.getElementById('calcCatBox');
   const calcCatDot = document.getElementById('calcCatDot');
   const calcCatSelect = document.getElementById('calcCatSelect');
   const amountSign = document.getElementById('amountSign');
@@ -1993,6 +1994,12 @@
     calcCatDot.innerHTML = iconSvg(currentCategory.name, 14);
     calcCatSelect.value = currentCategory.name;
     calcCatLabel.textContent = currentCategory.name;
+    // Confirming an occurrence always saves rep.category regardless of what's
+    // shown here (see confirmOccurrence), so the picker would be a dead
+    // control — drop it from the nav bar rather than show something
+    // that looks changeable but silently isn't.
+    calcCatSelect.disabled = !!pendingOcc;
+    calcCatBox.hidden = !!pendingOcc;
     renderTags();
     // Income category is always money in; every other category is money out.
     currentType = currentCategory.type;

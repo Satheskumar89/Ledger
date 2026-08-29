@@ -1673,6 +1673,10 @@
     font-size: 16px;
     color: var(--ink-soft);
   }
+  /* The unconditional display: flex above outranks the UA [hidden] rule at
+     equal specificity (author beats UA), so confirming a repeat occurrence
+     — which sets calcCatBox.hidden — needs this to actually disappear. */
+  .calc-cat[hidden] { display: none; }
   .calc-cat .tile-icon { width: 26px; height: 26px; border-radius: 7px; }
   /* A native select is as wide as its longest option ('Transport'), which
      stranded the caret far from short names like 'Other'. Show a label
